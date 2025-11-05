@@ -1,0 +1,330 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+
+<div class="homepage">
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-overlay"></div>
+        <div class="hero-container">
+            <div class="hero-content">
+                <div class="hero-badge">
+                    <i class="fas fa-graduation-cap"></i>
+                    <span>Trusted by College Students Nationwide</span>
+                </div>
+                <h1 class="hero-title">Connect with Expert Tutors.<br>Excel in Your Studies.</h1>
+                <p class="hero-subtitle">
+                    Join thousands of students getting personalized academic support from verified college tutors. Available 24/7 for all your courses.
+                </p>
+
+                <div class="hero-cta">
+                    <a href="{% url 'tutoringsession:index' %}" class="btn btn-primary btn-hero">
+                        <i class="fas fa-search"></i> 
+                        <span>Find a Tutor</span>
+                    </a>
+                    <a href="{% url 'accounts:signup_choice' %}" class="btn btn-secondary btn-hero">
+                        <i class="fas fa-user-plus"></i> 
+                        <span>Join for Free</span>
+                    </a>
+                </div>
+
+                <div class="hero-stats">
+                    <div class="stat-item">
+                        <div class="stat-number">200+</div>
+                        <div class="stat-label">Expert Tutors</div>
+                    </div>
+                    <div class="stat-divider"></div>
+                    <div class="stat-item">
+                        <div class="stat-number">1,000+</div>
+                        <div class="stat-label">Students Helped</div>
+                    </div>
+                    <div class="stat-divider"></div>
+                    <div class="stat-item">
+                        <div class="stat-number">4.8/5</div>
+                        <div class="stat-label">Average Rating</div>
+                    </div>
+                </div>
+
+                <div class="hero-trust">
+                    <div class="trust-badge">
+                        <i class="fas fa-shield-alt"></i>
+                        <span>100% Free for Students</span>
+                    </div>
+                    <div class="trust-badge">
+                        <i class="fas fa-check-circle"></i>
+                        <span>Verified Tutors Only</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Featured Subjects -->
+    <section class="subjects-section">
+        <div class="section-container">
+            <div class="section-header-inline">
+                <h3>Popular Subjects</h3>
+                <p>Get help in any course</p>
+            </div>
+            <div class="subjects-grid">
+                <div class="subject-card">
+                    <img src="{% static 'img/math_icon.png' %}" alt="Mathematics">
+                    <span>Mathematics</span>
+                </div>
+                <div class="subject-card">
+                    <img src="{% static 'img/physics_icon.png' %}" alt="Physics">
+                    <span>Physics</span>
+                </div>
+                <div class="subject-card">
+                    <img src="{% static 'img/cs_icon.png' %}" alt="Computer Science">
+                    <span>Computer Science</span>
+                </div>
+                <div class="subject-card">
+                    <img src="{% static 'img/chem_icon.png' %}" alt="Chemistry">
+                    <span>Chemistry</span>
+                </div>
+                <div class="subject-card">
+                    <img src="{% static 'img/english_icon.png' %}" alt="English">
+                    <span>English</span>
+                </div>
+            </div>
+
+            <div class="section-cta mt-5">
+                <a href="{% url 'home:about' %}" class="btn btn-primary btn-lg">
+                    Learn More
+                </a>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- How It Works -->
+    <section class="how-it-works py-5 bg-white">
+        <div class="container text-center">
+            <div class="section-header mb-5">
+                <span class="section-badge">Simple Process</span>
+                <h2 class="fw-bold">How It Works</h2>
+                <p class="text-muted">
+                    Get started in three easy steps and improve your grades today.
+                </p>
+            </div>
+
+            <div class="steps-row d-flex flex-column flex-md-row justify-content-center align-items-stretch gap-4">
+                <div class="step-card flex-fill">
+                    <div class="step-icon-wrapper">
+                    <div class="step-icon">
+                        <i class="fas fa-user-circle"></i>
+                    </div>
+                    <div class="step-number">1</div>
+                    </div>
+                    <div class="step-content">
+                    <h3>Create Your Profile</h3>
+                    <p>Sign up in minutes and tell us about your academic needs, subjects, and goals.</p>
+                </div>
+            </div>
+
+            <div class="step-card flex-fill">
+                <div class="step-icon-wrapper">
+                    <div class="step-icon">
+                        <i class="fas fa-search"></i>
+                    </div>
+                    <div class="step-number">2</div>
+                    </div>
+                    <div class="step-content">
+                    <h3>Find Your Tutor</h3>
+                    <p>Browse verified tutors by subject, rating, and availability. Message them directly to schedule.</p>
+                </div>
+            </div>
+
+            <div class="step-card flex-fill">
+                <div class="step-icon-wrapper">
+                    <div class="step-icon">
+                        <i class="fas fa-rocket"></i>
+                    </div>
+                    <div class="step-number">3</div>
+                    </div>
+                    <div class="step-content">
+                    <h3>Start Learning</h3>
+                    <p>Join your session online or in person and start mastering your coursework with expert guidance.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section-cta mt-5">
+                <a href="{% url 'accounts:signup_choice' %}" class="btn btn-primary btn-lg">
+                    Get Started Now
+                </a>
+            </div>
+        </div>
+    </section>
+
+
+
+    <!-- Features -->
+    <section class="features-section">
+        <div class="section-container">
+            <div class="section-header">
+                <span class="section-badge">Why Choose Us</span>
+                <h2>Built for Student Success</h2>
+                <p class="section-description">Everything you need to excel academically, all in one platform</p>
+            </div>
+
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-user-graduate"></i>
+                    </div>
+                    <h3>Verified Tutors</h3>
+                    <p>Every tutor is carefully screened and verified for subject expertise and teaching quality.</p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-video"></i>
+                    </div>
+                    <h3>Flexible Sessions</h3>
+                    <p>Choose between virtual or in-person tutoring sessions that fit your schedule and preferences.</p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-dollar-sign"></i>
+                    </div>
+                    <h3>Affordable Rates</h3>
+                    <p>Connect with tutors at competitive rates. Free to join, only pay when you book a session.</p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <h3>24/7 Availability</h3>
+                    <p>Find tutors available at any time, perfect for last-minute study sessions or exam prep.</p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-comments"></i>
+                    </div>
+                    <h3>Direct Messaging</h3>
+                    <p>Chat directly with tutors to discuss your needs and schedule sessions at your convenience.</p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-star"></i>
+                    </div>
+                    <h3>Ratings & Reviews</h3>
+                    <p>Read authentic reviews from students and make informed decisions about your tutor.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Testimonials -->
+    <section class="testimonials-section">
+        <div class="section-container">
+            <div class="section-header">
+                <span class="section-badge">Success Stories</span>
+                <h2>What Students Say</h2>
+                <p class="section-description">Real feedback from learners who improved their grades</p>
+            </div>
+
+            <div class="testimonials-grid">
+                <div class="testimonial-card">
+                    <div class="testimonial-rating">
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                    </div>
+                    <p class="testimonial-text">"I was struggling with calculus all semester, but after just a few sessions with my tutor, everything finally clicked. Went from a C to an A!"</p>
+                    <div class="testimonial-author">
+                        <div class="author-avatar">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <div class="author-info">
+                            <strong>Emma Wilson</strong>
+                            <span>Freshman • Mathematics</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="testimonial-card featured">
+                    <div class="featured-badge">
+                        <i class="fas fa-crown"></i>
+                        <span>Top Rated</span>
+                    </div>
+                    <div class="testimonial-rating">
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                    </div>
+                    <p class="testimonial-text">"As a tutor, this platform made it incredibly easy to connect with students and manage my sessions. The interface is intuitive and the support is great."</p>
+                    <div class="testimonial-author">
+                        <div class="author-avatar">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <div class="author-info">
+                            <strong>Ryan Parker</strong>
+                            <span>Tutor • Computer Science</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="testimonial-card">
+                    <div class="testimonial-rating">
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                    </div>
+                    <p class="testimonial-text">"The scheduling system is so convenient, and I love that I can message my tutor anytime to clarify concepts. Best decision for my GPA!"</p>
+                    <div class="testimonial-author">
+                        <div class="author-avatar">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <div class="author-info">
+                            <strong>Sophia Taylor</strong>
+                            <span>Junior • Biology</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Final CTA -->
+    <section class="final-cta">
+        <div class="cta-container">
+            <div class="cta-content">
+                <div class="cta-icon">
+                    <i class="fas fa-graduation-cap"></i>
+                </div>
+                <h2>Ready to Ace Your Classes?</h2>
+                <p>Join thousands of students who are already improving their grades with personalized tutoring</p>
+                <div class="cta-buttons">
+                    <a href="{% url 'accounts:signup_choice' %}" class="btn btn-cta-primary">
+                        <span>Start Learning Today</span>
+                        <i class="fas fa-arrow-right"></i>
+                    </a>
+                    <a href="{% url 'home:about' %}" class="btn btn-cta-secondary">
+                        <span>Learn More About Us</span>
+                    </a>
+                </div>
+                <p class="cta-note">
+                    <i class="fas fa-info-circle"></i>
+                    No credit card required • Free to sign up
+                </p>
+            </div>
+        </div>
+    </section>
+</div>
+
+{% endblock %}

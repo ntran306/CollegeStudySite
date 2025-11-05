@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="text-center mt-5">
+  <h2>Join College Study Site</h2>
+  <p class="mb-4">Choose your role to get started:</p>
+  <div class="d-flex justify-content-center gap-4">
+    <a href="{% url 'accounts:signup_student' %}" class="btn btn-primary btn-lg">I’m a Student</a>
+    <a href="{% url 'accounts:signup_tutor' %}" class="btn btn-outline-primary btn-lg">I’m a Tutor</a>
+  </div>
+</div>
+{% endblock %}
