@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-5" style="max-width:400px;">
+  <h2 class="mb-4 text-center">Log In</h2>
+  <form method="POST" novalidate>
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit" class="btn btn-primary w-100">Log In</button>
+  </form>
+  <p class="text-center mt-3">
+    Don’t have an account?
+    <a href="{% url 'accounts:signup_choice' %}">Sign up</a>
+  </p>
+</div>
+{% endblock %}

@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-5">
+  <h2>Your Profile</h2>
+  <hr>
+  {% if student_profile %}
+    <h4>Student Profile</h4>
+    <p><strong>Major:</strong> {{ student_profile.major }}</p>
+    <p><strong>Year:</strong> {{ student_profile.year }}</p>
+  {% elif tutor_profile %}
+    <h4>Tutor Profile</h4>
+    <p><strong>Subjects:</strong> {{ tutor_profile.subjects }}</p>
+    <p><strong>Rate:</strong> ${{ tutor_profile.rate }}</p>
+    <p><strong>Bio:</strong> {{ tutor_profile.bio }}</p>
+  {% else %}
+    <p>No profile data found.</p>
+  {% endif %}
+</div>
+{% endblock %}

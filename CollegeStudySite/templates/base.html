@@ -1,0 +1,195 @@
+{% load static %}
+{% load custom_filters %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}College Study Site{% endblock %}</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{% static 'img/favicon-32x32.png' %}">
+    <link rel="icon" type="image/png" sizes="16x16" href="{% static 'img/favicon-16x16.png' %}">
+</head>
+<body>
+    <header>
+        <nav class="navbar">
+            <div class="navbar-container">
+                <div class="navbar-inner">
+                    <div class="logo">
+                        <a href="{% url 'home:index' %}">
+                            <img src="{% static 'img/main_logo.png' %}" alt="StudySite Logo" class="logo-icon">
+                            <a href ="{% url 'home:index' %}" class="logo-text">College Study Site</a>
+                        </a>
+                    </div>
+
+                    <ul class="nav-links">
+                        {% if user.is_authenticated %}
+                            <!-- LOGGED-IN NAV -->
+                            <li>
+                                <a href="{% url 'accounts:profile' %}" class="{% if request.resolver_match.view_name == 'accounts:profile' %}active{% endif %}">
+                                    <i class="fas fa-user"></i>
+                                    <span>Profile</span>
+                                </a>
+                            </li>
+
+                            {% if user|has_tutorprofile %}
+                                <li>
+                                    <a href="#"
+                                    class="{% if request.resolver_match.view_name == 'tutoringsession:find_students' %}active{% endif %}">
+                                        <i class="fas fa-search"></i>
+                                        <span>Find Students</span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="#"
+                                    class="{% if request.resolver_match.view_name == 'tutoringsession:my_sessions' %}active{% endif %}">
+                                        <i class="fas fa-calendar-check"></i>
+                                        <span>My Sessions</span>
+                                    </a>
+                                </li>
+                            {% elif user|has_studentprofile %}
+                                <li>
+                                    <a href="{% url 'tutoringsession:index' %}"
+                                    class="{% if request.resolver_match.view_name == 'tutoringsession:index' %}active{% endif %}">
+                                        <i class="fas fa-chalkboard-teacher"></i>
+                                        <span>Find Tutors</span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="#"
+                                    class="{% if request.resolver_match.view_name == 'tutoringsession:my_requests' %}active{% endif %}">
+                                        <i class="fas fa-clipboard-list"></i>
+                                        <span>My Requests</span>
+                                    </a>
+                                </li>
+                            {% endif %}
+
+                            <li class="nav-button">
+                                <a href="{% url 'accounts:logout' %}" class="btn btn-outline-nav">
+                                    <i class="fas fa-sign-out-alt"></i>
+                                    <span>Logout</span>
+                                </a>
+                            </li>
+
+                        {% else %}
+                            <!-- LOGGED-OUT NAV -->
+                            <li>
+                                <a href="{% url 'home:index' %}" class="{% if request.resolver_match.view_name == 'home:index' %}active{% endif %}">
+                                    <i class="fas fa-home"></i>
+                                    <span>Home</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a href="{% url 'accounts:signup_choice' %}"
+                                class="{% if request.resolver_match.view_name == 'accounts:signup_choice' %}active{% endif %}">
+                                    Sign Up
+                                </a>
+                            </li>
+                            <li class="nav-button">
+                                <a href="{% url 'accounts:login' %}" class="btn btn-primary-nav">
+                                    Login
+                                </a>
+                            </li>
+                        {% endif %}
+                    </ul>
+
+
+                    <button class="mobile-menu-btn" aria-label="Toggle menu">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    {% if messages %}
+        <div class="messages-container">
+            {% for message in messages %}
+                <div class="message message-{{ message.tags }}">
+                    <div class="message-content">
+                        <i class="fas fa-{% if message.tags == 'success' %}check-circle{% elif message.tags == 'error' %}exclamation-circle{% elif message.tags == 'warning' %}exclamation-triangle{% else %}info-circle{% endif %}"></i>
+                        <span>{{ message }}</span>
+                    </div>
+                    <button class="message-close" onclick="this.parentElement.remove()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="footer">
+        <div class="footer-container">
+            <div class="footer-grid">
+                <div class="footer-column">
+                    <div class="footer-logo">
+                        <img src="{% static 'img/study_logo.png' %}" alt="StudySite Logo" class="footer-logo-icon">
+                        <img src="{% static 'img/CollegeStudySite.png' %}" alt="CollegeStudySite" class="footer-logo-text">
+                    </div>
+                    <p class="footer-description">Connecting students with expert tutors for personalized learning experiences.</p>
+                    <div class="footer-social">
+                        <a href="#" aria-label="Facebook"><i class="fab fa-facebook"></i></a>
+                        <a href="#" aria-label="Twitter"><i class="fab fa-twitter"></i></a>
+                        <a href="#" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+                        <a href="#" aria-label="LinkedIn"><i class="fab fa-linkedin"></i></a>
+                    </div>
+                </div>
+                
+                <div class="footer-column">
+                    <h4>For Students</h4>
+                    <ul>
+                        <li><a href="{% url 'tutoringsession:index' %}">Find Tutors</a></li>
+                        <li><a href="{% url 'accounts:signup_choice' %}">Sign Up</a></li>
+                        <li><a href="#">How It Works</a></li>
+                        <li><a href="#">Pricing</a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer-column">
+                    <h4>For Tutors</h4>
+                    <ul>
+                        <li><a href="{% url 'accounts:signup_choice' %}">Become a Tutor</a></li>
+                        <li><a href="#">Tutor Resources</a></li>
+                        <li><a href="#">Success Stories</a></li>
+                        <li><a href="#">FAQ</a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer-column">
+                    <h4>Company</h4>
+                    <ul>
+                        <li><a href="{% url 'home:about' %}">About Us</a></li>
+                        <li><a href="#">Contact</a></li>
+                        <li><a href="#">Privacy Policy</a></li>
+                        <li><a href="#">Terms of Service</a></li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="footer-bottom">
+                <p>&copy; 2025 College Study Site. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+      setTimeout(() => {
+        document.querySelectorAll('.messages-container .message').forEach(el => {
+          el.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+          el.style.opacity = '0';
+          el.style.transform = 'translateY(-10px)';
+          setTimeout(() => el.remove(), 300);
+        });
+      }, 4000);
+    </script>
+</body>
+</html>
