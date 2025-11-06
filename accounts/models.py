@@ -24,10 +24,15 @@ class TutorProfile(models.Model):
     ]
 
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    subjects = models.CharField(max_length=255, choices=SUBJECT_CHOICES, blank=True, null=True)
+    subjects = models.TextField(blank=True, null=True)
     rate = models.DecimalField(max_digits=6, decimal_places=2, blank=True, null=True)
     bio = models.TextField(blank=True, null=True)
     location = models.CharField(max_length=255, blank=True, null=True)
 
+    def get_subjects_list(self):
+            """Return subjects as a Python list."""
+            if self.subjects:
+                return [s.strip() for s in self.subjects.split(',')]
+            return []
     def __str__(self):
         return f"{self.user.username} - Tutor"

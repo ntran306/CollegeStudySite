@@ -4,6 +4,11 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.forms import AuthenticationForm
 from .forms import StudentSignUpForm, TutorSignUpForm
 from .models import StudentProfile, TutorProfile
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import render, redirect, get_object_or_404
+from .forms import TutorProfileForm
+from .forms import TutorProfileForm, StudentProfileForm
+
 
 # ------------------------------------
 # Sign-up Choice Page
@@ -71,4 +76,38 @@ def profile_view(request):
     return render(request, 'accounts/profile.html', {
         'student_profile': student_profile,
         'tutor_profile': tutor_profile
+    })
+
+# ------------------------------------
+# Edit Profile
+# ------------------------------------
+@login_required
+def edit_profile_view(request):
+    # Determine if the user is a tutor or student
+    tutor_profile = getattr(request.user, 'tutorprofile', None)
+    student_profile = getattr(request.user, 'studentprofile', None)
+
+    if tutor_profile:
+        profile = tutor_profile
+        form_class = TutorProfileForm
+        profile_type = "Tutor"
+    elif student_profile:
+        profile = student_profile
+        form_class = StudentProfileForm
+        profile_type = "Student"
+    else:
+        # User has no profile yet (edge case)
+        return redirect('accounts:signup_choice')
+
+    if request.method == 'POST':
+        form = form_class(request.POST, instance=profile)
+        if form.is_valid():
+            form.save()
+            return redirect('accounts:profile')
+    else:
+        form = form_class(instance=profile)
+
+    return render(request, 'accounts/edit_profile.html', {
+        'form': form,
+        'profile_type': profile_type,
     })

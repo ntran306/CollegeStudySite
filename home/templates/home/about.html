@@ -4,76 +4,230 @@
 {% block title %}About Us | College Study Site{% endblock %}
 
 {% block content %}
-<section class="about-hero text-center py-5 bg-light">
-    <div class="container">
-        <h1 class="fw-bold mb-3">About College Study Site</h1>
-        <p class="lead text-muted">
-            Empowering students to learn smarter, connect faster, and succeed together.
-        </p>
-    </div>
-</section>
 
-<section class="about-story py-5">
-    <div class="container">
-        <div class="row align-items-center g-5">
-            <div class="col-md-6">
-                <img src="{% static 'img/about_study.jpg' %}" alt="Students studying together" class="img-fluid rounded shadow">
-            </div>
-            <div class="col-md-6">
-                <h2 class="fw-bold mb-3">Our Mission</h2>
-                <p>
-                    College Study Site was created to make academic success more accessible for every college student.
-                    We believe that learning should be collaborative and tailored to your goals — whether you're
-                    mastering complex subjects or preparing for exams.
-                </p>
-                <p>
-                    By connecting students with verified tutors, we provide a safe and effective space to grow
-                    academically while building real connections across campuses.
+<div class="about-page">
+    
+    <!-- Hero Section -->
+    <section class="about-hero">
+        <div class="about-hero-overlay"></div>
+        <div class="about-hero-container">
+            <div class="about-hero-content">
+                <div class="about-badge">
+                    <i class="fas fa-heart"></i>
+                    <span>Our Story</span>
+                </div>
+                <h1>About College Study Site</h1>
+                <p class="about-hero-subtitle">
+                    Empowering students to learn smarter, connect faster, and succeed together through personalized tutoring and collaborative education.
                 </p>
             </div>
         </div>
-    </div>
-</section>
+    </section>
 
-<section class="about-values py-5 bg-white text-center">
-    <div class="container">
-        <h2 class="fw-bold mb-4">Our Core Values</h2>
-        <div class="row g-4">
-            <div class="col-md-4">
-                <div class="value-card p-4 border rounded h-100 shadow-sm">
-                    <i class="fas fa-lightbulb fa-2x text-primary mb-3"></i>
-                    <h4>Innovation</h4>
-                    <p>We continuously improve our platform to make learning more intuitive and accessible.</p>
+    <!-- Mission Section -->
+    <section class="about-mission">
+        <div class="about-container">
+            <div class="mission-grid">
+                <div class="mission-image">
+                    <img src="{% static 'img/about_study.jpg' %}" alt="Students studying together">
+                    <div class="mission-image-overlay">
+                        <div class="mission-stat">
+                            <div class="mission-stat-number">1000+</div>
+                            <div class="mission-stat-label">Students Helped</div>
+                        </div>
+                    </div>
                 </div>
-            </div>
-            <div class="col-md-4">
-                <div class="value-card p-4 border rounded h-100 shadow-sm">
-                    <i class="fas fa-users fa-2x text-primary mb-3"></i>
-                    <h4>Community</h4>
-                    <p>We believe in learning together — connecting students and tutors to support each other’s growth.</p>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="value-card p-4 border rounded h-100 shadow-sm">
-                    <i class="fas fa-graduation-cap fa-2x text-primary mb-3"></i>
-                    <h4>Excellence</h4>
-                    <p>We maintain high standards of quality, ensuring every tutor is experienced and verified.</p>
+                <div class="mission-content">
+                    <span class="section-badge">Our Mission</span>
+                    <h2>Making Academic Success Accessible for Every Student</h2>
+                    <p class="mission-text">
+                        College Study Site was created with a simple but powerful vision: to make academic success more accessible for every college student. We believe that learning should be collaborative, personalized, and tailored to your unique goals.
+                    </p>
+                    <p class="mission-text">
+                        Whether you're mastering complex subjects, preparing for critical exams, or seeking to understand challenging concepts, our platform connects you with verified tutors who are passionate about helping you succeed.
+                    </p>
+                    <div class="mission-highlights">
+                        <div class="highlight-item">
+                            <i class="fas fa-check-circle"></i>
+                            <span>Verified & experienced tutors</span>
+                        </div>
+                        <div class="highlight-item">
+                            <i class="fas fa-check-circle"></i>
+                            <span>Flexible scheduling options</span>
+                        </div>
+                        <div class="highlight-item">
+                            <i class="fas fa-check-circle"></i>
+                            <span>Safe & secure platform</span>
+                        </div>
+                        <div class="highlight-item">
+                            <i class="fas fa-check-circle"></i>
+                            <span>Real academic results</span>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
-</section>
+    </section>
 
-<section class="about-cta py-5 bg-primary text-white text-center">
-    <div class="container">
-        <h2 class="fw-bold mb-3">Join the College Study Site Community</h2>
-        <p class="lead mb-4">Whether you’re here to learn or to teach — we’re building the future of collaborative education.</p>
-        <a href="{% url 'accounts:signup_choice' %}" class="btn btn-light btn-lg me-3">
-            Get Started
-        </a>
-        <a href="{% url 'tutoringsession:index' %}" class="btn btn-outline-light btn-lg">
-            Find Tutors
-        </a>
-    </div>
-</section>
+    <!-- Values Section -->
+    <section class="about-values">
+        <div class="about-container">
+            <div class="section-header">
+                <span class="section-badge">What Drives Us</span>
+                <h2 style="justify-content: center;">Our Core Values</h2>
+                <p class="section-description">The principles that guide everything we do</p>
+            </div>
+
+            <div class="values-grid">
+                <div class="value-card">
+                    <div class="value-icon">
+                        <i class="fas fa-lightbulb"></i>
+                    </div>
+                    <h3>Innovation</h3>
+                    <p>We continuously evolve our platform with cutting-edge features to make learning more intuitive, accessible, and effective for modern students.</p>
+                </div>
+
+                <div class="value-card featured">
+                    <div class="value-featured-badge">
+                        <i class="fas fa-star"></i>
+                        <span>Core Value</span>
+                    </div>
+                    <div class="value-icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <h3>Community</h3>
+                    <p>We believe in the power of learning together. Our platform fosters genuine connections between students and tutors, creating a supportive ecosystem where everyone grows.</p>
+                </div>
+
+                <div class="value-card">
+                    <div class="value-icon">
+                        <i class="fas fa-graduation-cap"></i>
+                    </div>
+                    <h3>Excellence</h3>
+                    <p>We maintain rigorous quality standards, ensuring every tutor is experienced, qualified, and passionate about education. Your success is our priority.</p>
+                </div>
+
+                <div class="value-card">
+                    <div class="value-icon">
+                        <i class="fas fa-shield-alt"></i>
+                    </div>
+                    <h3>Trust & Safety</h3>
+                    <p>We create a secure environment where students and tutors can connect with confidence, backed by verification processes and community guidelines.</p>
+                </div>
+
+                <div class="value-card">
+                    <div class="value-icon">
+                        <i class="fas fa-hand-holding-heart"></i>
+                    </div>
+                    <h3>Accessibility</h3>
+                    <p>Education should be available to everyone. We work to make quality tutoring affordable and accessible regardless of your background or circumstances.</p>
+                </div>
+
+                <div class="value-card">
+                    <div class="value-icon">
+                        <i class="fas fa-rocket"></i>
+                    </div>
+                    <h3>Student Success</h3>
+                    <p>Every feature, every decision, every update is made with one goal in mind: helping students achieve their academic dreams and reach their full potential.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Stats Section -->
+    <section class="about-stats">
+        <div class="about-container">
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div class="stat-icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-number">1,000+</div>
+                        <div class="stat-label">Students Helped</div>
+                    </div>
+                </div>
+
+                <div class="stat-item">
+                    <div class="stat-icon">
+                        <i class="fas fa-chalkboard-teacher"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-number">200+</div>
+                        <div class="stat-label">Expert Tutors</div>
+                    </div>
+                </div>
+
+                <div class="stat-item">
+                    <div class="stat-icon">
+                        <i class="fas fa-book-open"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-number">50+</div>
+                        <div class="stat-label">Subjects Covered</div>
+                    </div>
+                </div>
+
+                <div class="stat-item">
+                    <div class="stat-icon">
+                        <i class="fas fa-star"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-number">4.8/5</div>
+                        <div class="stat-label">Average Rating</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Vision Section -->
+    <section class="about-vision">
+        <div class="about-container">
+            <div class="vision-content">
+                <span class="section-badge">Looking Ahead</span>
+                <h2>Our Vision for the Future</h2>
+                <p class="vision-text">
+                    We're building more than just a tutoring platform — we're creating the future of collaborative education. 
+                    Our vision is a world where every student has access to personalized, high-quality academic support, 
+                    and where tutors can share their passion for teaching while earning meaningful income.
+                </p>
+                <p class="vision-text">
+                    As we grow, we're committed to expanding our reach, improving our technology, and creating new ways 
+                    for students and tutors to connect, learn, and succeed together. Join us on this journey.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="about-cta">
+        <div class="about-cta-overlay"></div>
+        <div class="about-container">
+            <div class="about-cta-content">
+                <div class="cta-icon">
+                    <i class="fas fa-users"></i>
+                </div>
+                <h2>Join the College Study Site Community</h2>
+                <p>Whether you're here to learn or to teach — we're building the future of collaborative education together.</p>
+                <div class="cta-buttons">
+                    <a href="{% url 'accounts:signup_choice' %}" class="btn btn-cta-primary">
+                        <i class="fas fa-user-plus"></i>
+                        <span>Get Started Today</span>
+                    </a>
+                    <a href="{% url 'accounts:signup_choice' %}" class="btn btn-cta-secondary">
+                        <i class="fas fa-search"></i>
+                        <span>Browse Tutors</span>
+                    </a>
+                </div>
+                <p class="cta-note">
+                    <i class="fas fa-check-circle"></i>
+                    Free to join • No credit card required • Start learning immediately
+                </p>
+            </div>
+        </div>
+    </section>
+
+</div>
+
 {% endblock %}
