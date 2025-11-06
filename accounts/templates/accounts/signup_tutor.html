@@ -13,7 +13,6 @@
 
         <form method="POST" class="auth-form" novalidate>
             {% csrf_token %}
-            
             {% if form.non_field_errors %}
                 <div class="form-errors">
                     {% for error in form.non_field_errors %}
@@ -117,106 +116,114 @@
             </div>
 
             <div class="form-section">
-                <h3 class="form-section-title">
-                    <i class="fas fa-briefcase"></i>
-                    Tutor Profile
-                </h3>
+              <h3 class="form-section-title">
+                <i class="fas fa-briefcase"></i>
+                Tutor Profile
+              </h3>
 
-                <div class="form-group">
-                    <label for="{{ form.subjects.id_for_label }}" class="form-label">
-                        Subjects
-                        <span class="required">*</span>
-                    </label>
-                    {{ form.subjects }}
-                    {% if form.subjects.help_text %}
+              <div class="section-header">
+                <h2>
+                  <i class="fas fa-book-open"></i>
+                  Subjects I Teach
+                </h2>
+              </div>
+
+              <div class="form-group mb-3">
+                <label for="{{ form.subjects.id_for_label }}" class="form-label">
+                  <i class="fas fa-book-open me-1"></i> Select Subjects
+                  <span class="required">*</span>
+                </label>
+
+                {{ form.subjects }}
+
+                <small class="form-text text-muted">
+                  Hold <strong>Ctrl</strong> (Windows) or <strong>Cmd</strong> (Mac) to select multiple subjects.
+                </small>
+
+                {% if form.subjects.errors %}
+                  {% for error in form.subjects.errors %}
+                    <div class="text-danger mt-1">
+                      <i class="fas fa-exclamation-circle"></i>
+                      <span>{{ error }}</span>
+                    </div>
+                  {% endfor %}
+                {% endif %}
+              </div>
+            </div>
+            
+            <div class="form-row">
+              <div class="form-group">
+                  <label for="{{ form.rate.id_for_label }}" class="form-label">
+                      Hourly Rate ($)
+                      <span class="required">*</span>
+                     </label>
+                    {{ form.rate }}
+                    {% if form.rate.help_text %}
                         <div class="form-help">
                             <i class="fas fa-info-circle"></i>
-                            <span>{{ form.subjects.help_text|safe }}</span>
+                            <span>{{ form.rate.help_text|safe }}</span>
                         </div>
                     {% endif %}
-                    {% if form.subjects.errors %}
-                        {% for error in form.subjects.errors %}
+                    {% if form.rate.errors %}
+                        {% for error in form.rate.errors %}
                             <div class="field-error">
                                 <i class="fas fa-exclamation-circle"></i>
                                 <span>{{ error }}</span>
                             </div>
                         {% endfor %}
-                    {% endif %}
+                      {% endif %}
                 </div>
 
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="{{ form.rate.id_for_label }}" class="form-label">
-                            Hourly Rate ($)
-                            <span class="required">*</span>
-                        </label>
-                        {{ form.rate }}
-                        {% if form.rate.help_text %}
-                            <div class="form-help">
-                                <i class="fas fa-info-circle"></i>
-                                <span>{{ form.rate.help_text|safe }}</span>
-                            </div>
-                        {% endif %}
-                        {% if form.rate.errors %}
-                            {% for error in form.rate.errors %}
-                                <div class="field-error">
-                                    <i class="fas fa-exclamation-circle"></i>
-                                    <span>{{ error }}</span>
-                                </div>
-                            {% endfor %}
-                        {% endif %}
-                    </div>
-
-                    <div class="form-group">
-                        <label for="{{ form.location.id_for_label }}" class="form-label">
-                            Location
-                            <span class="required">*</span>
-                        </label>
-                        {{ form.location }}
-                        {% if form.location.help_text %}
-                            <div class="form-help">
-                                <i class="fas fa-info-circle"></i>
-                                <span>{{ form.location.help_text|safe }}</span>
-                            </div>
-                        {% endif %}
+                <div class="form-group">
+                     <label for="{{ form.location.id_for_label }}" class="form-label">
+                        Location
+                        <span class="required">*</span>
+                    </label>
+                    {{ form.location }}
+                      {% if form.location.help_text %}
+                        <div class="form-help">
+                            <i class="fas fa-info-circle"></i>
+                            <span>{{ form.location.help_text|safe }}</span>
+                        </div>
+                    {% endif %}
                         {% if form.location.errors %}
-                            {% for error in form.location.errors %}
-                                <div class="field-error">
-                                    <i class="fas fa-exclamation-circle"></i>
-                                    <span>{{ error }}</span>
-                                </div>
-                            {% endfor %}
-                        {% endif %}
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label for="{{ form.bio.id_for_label }}" class="form-label">
-                        Bio
-                        <span class="required">*</span>
-                    </label>
-                    {{ form.bio }}
-                    {% if form.bio.help_text %}
-                        <div class="form-help">
-                            <i class="fas fa-info-circle"></i>
-                            <span>{{ form.bio.help_text|safe }}</span>
-                        </div>
-                    {% endif %}
-                    {% if form.bio.errors %}
-                        {% for error in form.bio.errors %}
+                         {% for error in form.location.errors %}
                             <div class="field-error">
                                 <i class="fas fa-exclamation-circle"></i>
                                 <span>{{ error }}</span>
                             </div>
-                        {% endfor %}
-                    {% endif %}
+                        {% endfor %}                      
+                      {% endif %}
                 </div>
             </div>
 
-            <button type="submit" class="btn btn-primary btn-form">
-                <i class="fas fa-user-plus"></i>
-                <span>Create Tutor Account</span>
-            </button>
+            <div class="form-group">
+                <label for="{{ form.bio.id_for_label }}" class="form-label">
+                    Bio
+                     <span class="required">*</span>
+                </label>
+                {{ form.bio }}
+                {% if form.bio.help_text %}
+                    <div class="form-help">                          
+                      <i class="fas fa-info-circle"></i>
+                        <span>{{ form.bio.help_text|safe }}</span>
+                    </div>
+                {% endif %}
+                {% if form.bio.errors %}
+                    {% for error in form.bio.errors %}
+                        <div class="field-error">
+                             <i class="fas fa-exclamation-circle"></i>
+                            <span>{{ error }}</span>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            </div>            
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-form">
+              <i class="fas fa-user-plus"></i>
+              <span>Create Tutor Account</span>
+          </button>
         </form>
 
         <div class="auth-footer">

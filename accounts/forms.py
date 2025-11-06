@@ -24,10 +24,11 @@ class StudentSignUpForm(UserCreationForm):
 
 
 class TutorSignUpForm(UserCreationForm):
-    subjects = forms.ChoiceField(
+    subjects = forms.MultipleChoiceField(
         choices=TutorProfile.SUBJECT_CHOICES,
-        widget=forms.Select(attrs={'class': 'form-select'}),
+        widget=forms.SelectMultiple(attrs={'class': 'form-select', 'size': 6}),
         required=False,
+        help_text="Hold CTRL (Windows) or CMD (Mac) to select multiple subjects."
     )
     rate = forms.DecimalField(
         max_digits=6,
@@ -58,11 +59,58 @@ class TutorSignUpForm(UserCreationForm):
     def save(self, commit=True):
         user = super().save(commit=commit)
         if commit:
+            subjects_list = self.cleaned_data.get('subjects', [])
+            subjects_str = ', '.join(subjects_list)
             TutorProfile.objects.create(
                 user=user,
-                subjects=self.cleaned_data.get('subjects', ''),
+                subjects=subjects_str,
                 rate=self.cleaned_data.get('rate'),
                 bio=self.cleaned_data.get('bio', ''),
                 location=self.cleaned_data.get('location', ''),
             )
         return user
+
+class TutorProfileForm(forms.ModelForm):
+    subjects = forms.MultipleChoiceField(
+        choices=TutorProfile.SUBJECT_CHOICES,
+        widget=forms.SelectMultiple(attrs={'class': 'form-select', 'size': 6}),
+        required=False,
+        help_text="Hold CTRL (Windows) or CMD (Mac) to select multiple subjects."
+    )
+
+    class Meta:
+        model = TutorProfile
+        fields = ['subjects', 'rate', 'bio', 'location']
+        widgets = {
+            'rate': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Enter hourly rate',
+                'min': '0',
+                'step': '1',
+            }),
+            'bio': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'location': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter your city or campus'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Convert comma-separated subjects string to list for the form field
+        if self.instance and self.instance.subjects:
+            self.initial['subjects'] = [s.strip() for s in self.instance.subjects.split(',')]
+
+    def save(self, commit=True):
+        tutor_profile = super().save(commit=False)
+        subjects_list = self.cleaned_data.get('subjects', [])
+        tutor_profile.subjects = ', '.join(subjects_list)
+        if commit:
+            tutor_profile.save()
+        return tutor_profile
+
+class StudentProfileForm(forms.ModelForm):
+    class Meta:
+        model = StudentProfile
+        fields = ['major', 'year']
+        widgets = {
+            'major': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Your major'}),
+            'year': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Year (e.g. Freshman, Sophomore)'}),
+        }

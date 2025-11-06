@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="auth-page">
+  <div class="auth-form-container large">
+    <div class="auth-form-header">
+      <div class="auth-icon tutor">
+        <i class="fas fa-user-edit"></i>
+      </div>
+      <h1>Edit {{ profile_type }} Profile</h1>
+      <p>Update your information below</p>
+    </div>
+
+    <form method="POST" class="auth-form" novalidate>
+      {% csrf_token %}
+      {% if form.non_field_errors %}
+        <div class="form-errors">
+          {% for error in form.non_field_errors %}
+            <div class="error-message">
+              <i class="fas fa-exclamation-circle"></i>
+              <span>{{ error }}</span>
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      {% for field in form %}
+        <div class="form-group mb-3">
+          <label for="{{ field.id_for_label }}" class="form-label">
+            {{ field.label }}
+          </label>
+          {{ field }}
+          {% if field.help_text %}
+            <small class="form-text text-muted">{{ field.help_text|safe }}</small>
+          {% endif %}
+          {% for error in field.errors %}
+            <div class="text-danger mt-1">
+              <i class="fas fa-exclamation-circle"></i>
+              <span>{{ error }}</span>
+            </div>
+          {% endfor %}
+        </div>
+      {% endfor %}
+
+      <button type="submit" class="btn btn-primary w-100">
+        <i class="fas fa-save"></i> Save Changes
+      </button>
+    </form>
+
+    <div class="auth-footer mt-3">
+      <a href="{% url 'accounts:profile' %}" class="btn btn-secondary w-100">
+        <i class="fas fa-arrow-left"></i> Back to Profile
+      </a>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
