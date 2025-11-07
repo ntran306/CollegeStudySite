@@ -18,7 +18,7 @@ class StudentSignUpForm(UserCreationForm):
             StudentProfile.objects.create(
                 user=user,
                 major=self.cleaned_data.get('major', ''),
-                year=self.cleaned_data.get('year', '')
+                year=self.cleaned_data.get('year', ''),
             )
         return user
 
@@ -70,6 +70,7 @@ class TutorSignUpForm(UserCreationForm):
             )
         return user
 
+
 class TutorProfileForm(forms.ModelForm):
     subjects = forms.MultipleChoiceField(
         choices=TutorProfile.SUBJECT_CHOICES,
@@ -80,7 +81,11 @@ class TutorProfileForm(forms.ModelForm):
 
     class Meta:
         model = TutorProfile
-        fields = ['subjects', 'rate', 'bio', 'location']
+        fields = [
+            'subjects', 'rate', 'bio', 'school',
+            'location', 'latitude', 'longitude',
+            'avatar',
+        ]
         widgets = {
             'rate': forms.NumberInput(attrs={
                 'class': 'form-control',
@@ -89,12 +94,14 @@ class TutorProfileForm(forms.ModelForm):
                 'step': '1',
             }),
             'bio': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
-            'location': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter your city or campus'}),
+            'school': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Your school (optional)'}),
+            'location': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Favorite study spot (optional)'}),
+            'latitude': forms.HiddenInput(),
+            'longitude': forms.HiddenInput(),
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Convert comma-separated subjects string to list for the form field
         if self.instance and self.instance.subjects:
             self.initial['subjects'] = [s.strip() for s in self.instance.subjects.split(',')]
 
@@ -106,11 +113,20 @@ class TutorProfileForm(forms.ModelForm):
             tutor_profile.save()
         return tutor_profile
 
+
 class StudentProfileForm(forms.ModelForm):
     class Meta:
         model = StudentProfile
-        fields = ['major', 'year']
+        fields = [
+            'major', 'year', 'school',
+            'location', 'latitude', 'longitude',
+            'avatar',
+        ]
         widgets = {
             'major': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Your major'}),
             'year': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Year (e.g. Freshman, Sophomore)'}),
+            'school': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Your school (optional)'}),
+            'location': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Favorite study spot (optional)'}),
+            'latitude': forms.HiddenInput(),
+            'longitude': forms.HiddenInput(),
         }

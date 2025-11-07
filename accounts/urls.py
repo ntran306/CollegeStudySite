@@ -12,5 +12,9 @@ urlpatterns = [
     path('profile/', views.profile_view, name='profile'),
     path('profile/edit/', views.edit_profile_view, name='edit_profile'),
     path('connect/', views.connect_list, name='connect'),
-    path("connect/<int:user_id>/", views.connect, name="connect"),
+    path("connect/request/<int:user_id>/", views.connect_request, name="connect_request"),
+    path("connect/requests/", views.connect_requests, name="connect_requests"),
+    path("connect/requests/<int:pk>/accept/", views.connect_accept, name="connect_accept"),
+    path("connect/requests/<int:pk>/decline/", views.connect_decline, name="connect_decline"),
+    path("connect/requests/<int:pk>/cancel/", views.connect_cancel, name="connect_cancel"),
 ]

@@ -111,11 +111,23 @@
 {% if GOOGLE_MAPS_API_KEY %}
 <section class="section-container">
   <div class="profile-section">
-    <div class="section-header">
-      <h2><i class="fas fa-map-marker-alt"></i> Map</h2>
+    <div class="section-header" style="display:flex; align-items:center; justify-content:space-between; gap:1rem;">
+      <h2 style="margin:0;"><i class="fas fa-map-marker-alt"></i> Map</h2>
+
+      <!-- Map controls (reuses your button/input styles via CSS vars) -->
+      <div class="form-row" style="margin:0; display:flex; align-items:center; gap:.75rem;">
+        <label class="form-label" for="radius-miles" style="margin:0;">Radius (mi)</label>
+        <input id="radius-miles" type="number" step="0.1" min="0.1" value="3"
+               class="auth-form-input" style="width:6.5rem; padding:.4rem .6rem;">
+        <button id="use-my-location" class="btn btn-secondary" type="button" title="Center to my location">
+          <i class="fas fa-location-arrow"></i> Use my location
+        </button>
+      </div>
     </div>
+
     <div class="section-content">
-      <div id="map" style="width:100%; height:380px; border-radius: var(--radius-lg); box-shadow: var(--shadow-md); border:1px solid var(--border-color);"></div>
+      <div id="map"
+           style="width:100%; height:380px; border-radius: var(--radius-lg); box-shadow: var(--shadow-md); border:1px solid var(--border-color);"></div>
     </div>
   </div>
 </section>
@@ -216,49 +228,170 @@
 {% block extra_js %}
 {% if GOOGLE_MAPS_API_KEY %}
 <script>
-(function(){
+(function () {
+  const MILES_TO_METERS = 1609.344;
+  let map, blueCircle, userMarker;
+
+  function drawCircle(center, miles) {
+    const radiusMeters = (parseFloat(miles) || 0) * MILES_TO_METERS;
+    if (blueCircle) blueCircle.setMap(null);
+    blueCircle = new google.maps.Circle({
+      map,
+      center,
+      radius: radiusMeters > 0 ? radiusMeters : 0,
+      strokeColor: '#1e3a8a',
+      strokeOpacity: 0.8,
+      strokeWeight: 1,
+      fillColor: '#3b82f6',
+      fillOpacity: 0.15,
+    });
+  }
+
+  function setUserMarker(center) {
+    if (!userMarker) {
+      userMarker = new google.maps.Marker({
+        map,
+        position: center,
+        title: 'Selected Center',
+        icon: {
+          path: google.maps.SymbolPath.CIRCLE,
+          scale: 6,
+          strokeColor: '#2563eb',
+          fillColor: '#2563eb',
+          fillOpacity: 1
+        }
+      });
+    } else {
+      userMarker.setPosition(center);
+    }
+  }
+
+  function highlightListItem(id) {
+    const li = document.getElementById("session-" + id);
+    if (li) {
+      li.scrollIntoView({ behavior: "smooth", block: "center" });
+      li.style.boxShadow = "0 0 0 3px rgba(37, 99, 235, 0.25)";
+      setTimeout(() => (li.style.boxShadow = ""), 1200);
+    }
+  }
+
   function init() {
-    const el = document.getElementById("session-markers");
-    const markers = el ? JSON.parse(el.textContent) : [];
+    const dataEl = document.getElementById("session-markers");
+    const markers = dataEl ? JSON.parse(dataEl.textContent) : [];
     const mapEl = document.getElementById("map");
     if (!mapEl) return;
 
-    const fallback = { lat: 33.7756, lng: -84.3963 }; // GT fallback
-    const center = markers.length ? { lat: markers[0].lat, lng: markers[0].lng } : fallback;
+    const fallback = { lat: 33.7756, lng: -84.3963 }; // GT campus
+    const initialCenter = markers.length ? { lat: markers[0].lat, lng: markers[0].lng } : fallback;
 
-    const map = new google.maps.Map(mapEl, {
+    map = new google.maps.Map(mapEl, {
+      center: initialCenter,
       zoom: markers.length ? 12 : 11,
-      center
+      mapTypeControl: false,
+      streetViewControl: false,
+      fullscreenControl: true
     });
 
+    // Blue circle initial state (based on control)
+    const radiusInput = document.getElementById('radius-miles');
+    setUserMarker(initialCenter);
+    drawCircle(initialCenter, radiusInput ? radiusInput.value : 3);
+
+    // “Use my location”
+    const useMyLocBtn = document.getElementById('use-my-location');
+    useMyLocBtn?.addEventListener('click', () => {
+      if (!navigator.geolocation) return;
+      navigator.geolocation.getCurrentPosition((pos) => {
+        const c = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        map.panTo(c);
+        setUserMarker(c);
+        drawCircle(c, radiusInput ? radiusInput.value : 3);
+      });
+    });
+
+    // Update circle when radius changes
+    radiusInput?.addEventListener('input', (e) => {
+      const center = userMarker?.getPosition() || map.getCenter();
+      drawCircle(center, e.target.value);
+    });
+
+    // --- Advanced avatar markers for sessions ---
     const bounds = new google.maps.LatLngBounds();
     const info = new google.maps.InfoWindow();
+    const { AdvancedMarkerElement } = google.maps.marker || {};
+    const useAdvanced = Boolean(AdvancedMarkerElement);
 
     markers.forEach(m => {
-      const mk = new google.maps.Marker({
-        position: { lat: m.lat, lng: m.lng },
-        map,
-        title: m.title
-      });
-      bounds.extend(mk.getPosition());
-      mk.addListener("click", () => {
-        const html = `
-          <div style="min-width:200px;">
-            <strong>${m.title}</strong><br>
-            <small>${m.location}</small><br>
-            <small>Tutor: ${m.tutor} • ${m.date}</small><br>
-            <a href="#session-${m.id}">View in list</a>
-          </div>`;
-        info.setContent(html);
-        info.open(map, mk);
+      const position = { lat: m.lat, lng: m.lng };
 
-        const li = document.getElementById("session-" + m.id);
-        if (li) {
-          li.scrollIntoView({ behavior: "smooth", block: "center" });
-          li.style.boxShadow = "0 0 0 3px rgba(37, 99, 235, 0.25)";
-          setTimeout(() => (li.style.boxShadow = ""), 1200);
-        }
-      });
+      let markerObj;
+      if (useAdvanced) {
+        // Build pill with avatar + name
+        const pin = document.createElement("div");
+        pin.style.cssText = `
+          display:flex; align-items:center; gap:6px; padding:4px 8px;
+          background:var(--bg-elevated, #fff); border:1px solid var(--border-color, #e5e7eb);
+          border-radius:999px; box-shadow:var(--shadow-sm, 0 1px 2px rgba(0,0,0,.08));
+          transform:translateY(-6px);
+        `;
+
+        const img = document.createElement("img");
+        img.src = m.avatar || "{% static 'img/avatar-default.png' %}";
+        img.alt = (m.tutor || "Tutor");
+        img.referrerPolicy = "no-referrer";
+        img.style.cssText = "width:24px; height:24px; border-radius:999px; object-fit:cover;";
+        pin.appendChild(img);
+
+        const label = document.createElement("span");
+        label.textContent = m.tutor || "";
+        label.style.cssText = "font-size:12px; font-weight:600; color:var(--text, #111827);";
+        pin.appendChild(label);
+
+        markerObj = new AdvancedMarkerElement({
+          map,
+          position,
+          content: pin,
+          title: m.title || m.tutor
+        });
+
+        markerObj.addListener("gmp-click", () => {
+          info.setContent(`
+            <div style="min-width:220px; display:flex; gap:10px; align-items:center;">
+              <img src="${m.avatar || ''}" alt="${m.tutor || 'Tutor'}"
+                   style="width:40px;height:40px;border-radius:50%;object-fit:cover;">
+              <div>
+                <strong>${m.title ?? ''}</strong><br>
+                <small>${m.location ?? ''}</small><br>
+                <small>Tutor: ${m.tutor ?? ''} • ${m.date ?? ''}</small><br>
+                <a href="#session-${m.id}">View in list</a>
+              </div>
+            </div>
+          `);
+          info.open(map, markerObj);
+          highlightListItem(m.id);
+        });
+      } else {
+        // Fallback to default Marker if Advanced markers not available
+        markerObj = new google.maps.Marker({
+          map,
+          position,
+          title: m.title || m.tutor
+        });
+        markerObj.addListener("click", () => {
+          info.setContent(`
+            <div style="min-width:200px;">
+              <strong>${m.title ?? ''}</strong><br>
+              <small>${m.location ?? ''}</small><br>
+              <small>Tutor: ${m.tutor ?? ''} • ${m.date ?? ''}</small><br>
+              <a href="#session-${m.id}">View in list</a>
+            </div>
+          `);
+          info.open(map, markerObj);
+          highlightListItem(m.id);
+        });
+      }
+
+      bounds.extend(position);
     });
 
     if (markers.length > 1) map.fitBounds(bounds);
@@ -267,6 +400,8 @@
   window.__initSessionsMap = init;
 })();
 </script>
-<script async defer src="https://maps.googleapis.com/maps/api/js?key={{ GOOGLE_MAPS_API_KEY }}&callback=__initSessionsMap"></script>
+
+<!-- Need Marker Library -->
+<script async defer src="https://maps.googleapis.com/maps/api/js?key={{ GOOGLE_MAPS_API_KEY }}&libraries=marker&callback=__initSessionsMap"></script>
 {% endif %}
 {% endblock %}

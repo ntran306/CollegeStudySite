@@ -9,92 +9,161 @@
     </div>
 
     <div class="section-content">
-      <!-- Tabs -->
       <div class="tabs" style="display:flex; gap:.5rem; margin-bottom:1rem;">
         <a href="?tab=find" class="btn {% if tab == 'find' %}btn-primary{% else %}btn-outline-nav{% endif %}">
           <i class="fas fa-user-plus"></i> Find New
-          <span class="section-badge" style="margin-left:.5rem;">{{ counts.find }}</span>
+          <span class="section-badge" style="margin-left:.5rem;">{{ counts.find|default:0 }}</span>
         </a>
+
         <a href="?tab=friends" class="btn {% if tab == 'friends' %}btn-primary{% else %}btn-outline-nav{% endif %}">
           <i class="fas fa-user-check"></i> Your Friends
-          <span class="section-badge" style="margin-left:.5rem;">{{ counts.friends }}</span>
+          <span class="section-badge" style="margin-left:.5rem;">{{ counts.friends|default:0 }}</span>
+        </a>
+
+        <a href="?tab=pending" class="btn {% if tab == 'pending' %}btn-primary{% else %}btn-outline-nav{% endif %}">
+          <i class="fas fa-inbox"></i> Pending
+          <span class="section-badge" style="margin-left:.5rem;">
+            {{ counts.pending_in|default:0 }}/{{ counts.pending_out|default:0 }}
+          </span>
         </a>
       </div>
 
-      <!-- ===== FIND NEW TAB ===== -->
       {% if tab == 'find' %}
-      <form method="get" class="auth-form" style="margin-bottom:1.5rem;">
-        <input type="hidden" name="tab" value="find">
-        <div class="form-group">
-          <label class="form-label" for="q">Search by name, username, or email</label>
-          <input id="q" name="q" type="text" placeholder="e.g., Alice, Bob Chen, bob@example.edu" value="{{ query }}"
-                 class="auth-form-input" style="width:100%; padding:.75rem;">
-        </div>
-        <div class="section-cta">
-          <button type="submit" class="btn btn-primary btn-lg">
-            <i class="fas fa-search"></i> Search
-          </button>
-        </div>
-      </form>
-
-      <h3 style="margin:1rem 0;">Suggestions ({{ users|length }})</h3>
-      {% if users %}
-        <div class="action-cards">
-          {% for u in users %}
-          <div class="action-card">
-            <div class="action-icon"><i class="fas fa-user"></i></div>
-            <div class="action-content">
-              <h3>{{ u.username }}</h3>
-              <p style="color:var(--text-secondary); margin-top:.25rem;">
-                {% if u.first_name or u.last_name %}
-                  {{ u.first_name }} {{ u.last_name }}
-                {% else %}
-                  Student
-                {% endif %}
-                {% if u.email %} • {{ u.email }}{% endif %}
-              </p>
-            </div>
-            <a href="{% url 'accounts:connect' u.id %}" class="btn btn-primary">
-              <i class="fas fa-user-plus"></i> Connect
-            </a>
+        <form method="get" class="auth-form" style="margin-bottom:1.5rem;">
+          <input type="hidden" name="tab" value="find">
+          <div class="form-group">
+            <label class="form-label" for="q">Search by name, username, or email</label>
+            <input id="q" name="q" type="text"
+                   placeholder="e.g., Alice, Bob Chen, bob@example.edu"
+                   value="{{ query }}"
+                   class="auth-form-input" style="width:100%; padding:.75rem;">
           </div>
-          {% endfor %}
-        </div>
-      {% else %}
-        <div class="empty-profile">
-          <div class="empty-icon"><i class="far fa-smile"></i></div>
-          <h2>No suggestions found</h2>
-          <p>Try a different search or invite more friends!</p>
-        </div>
-      {% endif %}
+          <div class="section-cta">
+            <button type="submit" class="btn btn-primary btn-lg">
+              <i class="fas fa-search"></i> Search
+            </button>
+          </div>
+        </form>
+
+        <h3 style="margin:1rem 0;">Suggestions ({{ users|length }})</h3>
+        {% if users %}
+          <div class="action-cards">
+            {% for u in users %}
+            <div class="action-card">
+              <div class="action-icon"><i class="fas fa-user"></i></div>
+              <div class="action-content">
+                <h3>{{ u.username }}</h3>
+                <p style="color:var(--text-secondary); margin-top:.25rem;">
+                  {% if u.first_name or u.last_name %}
+                    {{ u.first_name }} {{ u.last_name }}
+                  {% else %}
+                    Student
+                  {% endif %}
+                  {% if u.email %} • {{ u.email }}{% endif %}
+                </p>
+              </div>
+              <a href="{% url 'accounts:connect_request' u.id %}" class="btn btn-primary">
+                <i class="fas fa-user-plus"></i> Connect
+              </a>
+            </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="empty-profile">
+            <div class="empty-icon"><i class="far fa-smile"></i></div>
+            <h2>No suggestions found</h2>
+            <p>Try a different search or invite more friends!</p>
+          </div>
+        {% endif %}
       {% endif %}
 
-      <!-- ===== FRIENDS TAB ===== -->
       {% if tab == 'friends' %}
-      <h3 style="margin:1rem 0;">Your Friends ({{ friends|length }})</h3>
-      {% if friends %}
-        <div class="action-cards">
-          {% for f in friends %}
-          <div class="action-card">
-            <div class="action-icon"><i class="fas fa-user-check"></i></div>
-            <div class="action-content">
-              <h3>{{ f.username }}</h3>
-              <p style="color:var(--text-secondary); margin-top:.25rem;">
-                {% if f.first_name or f.last_name %}
-                  {{ f.first_name }} {{ f.last_name }}
-                {% else %}
-                  Student
-                {% endif %}
-                {% if f.email %} • {{ f.email }}{% endif %}
-              </p>
+        <h3 style="margin:1rem 0;">Your Friends ({{ friends|length }})</h3>
+        {% if friends %}
+          <div class="action-cards">
+            {% for f in friends %}
+            <div class="action-card">
+              <div class="action-icon"><i class="fas fa-user-check"></i></div>
+              <div class="action-content">
+                <h3>{{ f.username }}</h3>
+                <p style="color:var(--text-secondary); margin-top:.25rem;">
+                  {% if f.first_name or f.last_name %}
+                    {{ f.first_name }} {{ f.last_name }}
+                  {% else %}
+                    Student
+                  {% endif %}
+                  {% if f.email %} • {{ f.email }}{% endif %}
+                </p>
+              </div>
+              <span class="section-badge" style="margin-left:auto;">Connected</span>
             </div>
-            <span class="section-badge" style="margin-left:auto;">Connected</span>
+            {% endfor %}
           </div>
-          {% endfor %}
-        </div>
-      {% else %}
-        <div class="empty-state">You haven’t connected with anyone yet.</div>
+        {% else %}
+          <div class="empty-state">You haven’t connected with anyone yet.</div>
+        {% endif %}
       {% endif %}
+
+      {% if tab == 'pending' %}
+        <div class="grid" style="display:grid; gap:1rem;">
+          <div>
+            <h3 style="margin:1rem 0;">Incoming Requests ({{ incoming|length|default:0 }})</h3>
+            {% if incoming %}
+              <div class="action-cards">
+                {% for fr in incoming %}
+                  <div class="action-card">
+                    <div class="action-icon"><i class="fas fa-inbox"></i></div>
+                    <div class="action-content">
+                      <h3>{{ fr.from_user.username }}</h3>
+                      <p style="color:var(--text-secondary); margin-top:.25rem;">
+                        sent {{ fr.created_at }}
+                      </p>
+                    </div>
+                    <form method="post" action="{% url 'accounts:connect_accept' fr.id %}" style="margin-right:.5rem;">
+                      {% csrf_token %}
+                      <button class="btn btn-primary"><i class="fas fa-check"></i> Accept</button>
+                    </form>
+                    <form method="post" action="{% url 'accounts:connect_decline' fr.id %}">
+                      {% csrf_token %}
+                      <button class="btn btn-outline-nav"><i class="fas fa-times"></i> Decline</button>
+                    </form>
+                  </div>
+                {% endfor %}
+              </div>
+            {% else %}
+              <div class="empty-state">No incoming requests.</div>
+            {% endif %}
+          </div>
+
+          <div>
+            <h3 style="margin:1rem 0;">Outgoing Requests ({{ outgoing|length|default:0 }})</h3>
+            {% if outgoing %}
+              <div class="action-cards">
+                {% for fr in outgoing %}
+                  <div class="action-card">
+                    <div class="action-icon"><i class="far fa-paper-plane"></i></div>
+                    <div class="action-content">
+                      <h3>{{ fr.to_user.username }}</h3>
+                      <p style="color:var(--text-secondary); margin-top:.25rem;">
+                        requested {{ fr.created_at }}
+                      </p>
+                    </div>
+                    <form method="post" action="{% url 'accounts:connect_cancel' fr.id %}">
+                      {% csrf_token %}
+                      <button class="btn btn-outline-nav"><i class="fas fa-ban"></i> Cancel</button>
+                    </form>
+                  </div>
+                {% endfor %}
+              </div>
+            {% else %}
+              <div class="empty-state">No outgoing requests.</div>
+            {% endif %}
+          </div>
+
+          <div class="empty-actions" style="margin-top:.5rem;">
+            <a href="{% url 'accounts:connect' %}?tab=find" class="btn btn-secondary">Back to Find</a>
+          </div>
+        </div>
       {% endif %}
     </div>
   </div>
