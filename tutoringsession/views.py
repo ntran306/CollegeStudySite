@@ -7,6 +7,8 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from accounts.models import Friendship
 from .models import TutoringSession, SessionRequest
+from django.contrib.auth.models import User
+from accounts.models import TutorProfile, StudentProfile
 
 
 REMOTE_TOKENS = {"remote", "online"}
@@ -144,3 +146,27 @@ def request_session(request, session_id):
         messages.success(request, "Request sent!")
 
     return redirect("tutoringsession:index")
+
+
+def search_students(request):
+    qs = StudentProfile.objects.select_related("user").all()
+
+    name_q = (request.GET.get("name") or "").strip()
+    subject_q = (request.GET.get("subject") or "").strip()
+    location_q = (request.GET.get("location") or "").strip()
+
+    if name_q:
+        qs = qs.filter(
+            Q(user__username__icontains=name_q) |
+            Q(user__first_name__icontains=name_q) |
+            Q(user__last_name__icontains=name_q)
+        )
+    if subject_q:
+        qs = qs.filter(interests__icontains=subject_q)
+    if location_q:
+        qs = qs.filter(location__icontains=location_q)
+
+    return render(request, "tutoringsession/search_students.html", {
+        "students": qs,
+        "selected": {"name": name_q, "subject": subject_q, "location": location_q}
+    })

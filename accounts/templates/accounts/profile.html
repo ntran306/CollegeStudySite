@@ -4,6 +4,16 @@
 <div class="profile-page">
     <div class="profile-container">
         
+        <!-- Back Button (when viewing other profiles) -->
+        {% if not is_own_profile %}
+        <div style="margin-bottom: 1.5rem;">
+            <a href="{% url 'accounts:profile' %}" class="btn btn-outline">
+                <i class="fas fa-arrow-left"></i>
+                <span>Back to My Profile</span>
+            </a>
+        </div>
+        {% endif %}
+        
         <!-- Profile Header -->
         <div class="profile-header">
             <div class="profile-avatar-section">
@@ -11,7 +21,7 @@
                     <i class="fas fa-{% if student_profile %}user-graduate{% elif tutor_profile %}chalkboard-teacher{% else %}user{% endif %}"></i>
                 </div>
                 <div class="profile-header-info">
-                    <h1>{{ user.get_full_name|default:user.username }}</h1>
+                    <h1>{{ profile_user.get_full_name|default:profile_user.username }}</h1>
                     <p class="profile-role">
                         <i class="fas fa-{% if student_profile %}graduation-cap{% elif tutor_profile %}briefcase{% else %}user{% endif %}"></i>
                         {% if student_profile %}
@@ -24,20 +34,33 @@
                     </p>
                     <p class="profile-email">
                         <i class="fas fa-envelope"></i>
-                        {{ user.email }}
+                        {{ profile_user.email }}
                     </p>
                 </div>
             </div>
-            <div class="profile-actions">
-                <a href="{% url 'accounts:edit_profile' %}" class="btn btn-secondary">
-                    <i class="fas fa-edit"></i>
-                    <span>Edit Profile</span>
-                </a>
-                <a href="{% url 'accounts:logout' %}" class="btn btn-outline">
-                    <i class="fas fa-sign-out-alt"></i>
-                    <span>Logout</span>
-                </a>
-            </div>
+            {% if is_own_profile %}
+                <div class="profile-actions">
+                    <a href="{% url 'accounts:edit_profile' %}" class="btn btn-secondary">
+                        <i class="fas fa-edit"></i>
+                        <span>Edit Profile</span>
+                    </a>
+                    <a href="{% url 'accounts:logout' %}" class="btn btn-outline">
+                        <i class="fas fa-sign-out-alt"></i>
+                        <span>Logout</span>
+                    </a>
+                </div>
+            {% else %}
+                <div class="profile-actions">
+                    <a href="{% url 'accounts:connect' profile_user.id %}" class="btn btn-primary">
+                        <i class="fas fa-user-plus"></i>
+                        <span>Connect</span>
+                    </a>
+                    <a href="#" class="btn btn-secondary">
+                        <i class="fas fa-envelope"></i>
+                        <span>Message</span>
+                    </a>
+                </div>
+            {% endif %}
         </div>
 
         {% if student_profile %}
@@ -97,11 +120,11 @@
                             <div class="info-grid">
                                 <div class="info-item">
                                     <span class="info-label">Username</span>
-                                    <span class="info-value">{{ user.username }}</span>
+                                    <span class="info-value">{{ profile_user.username }}</span>
                                 </div>
                                 <div class="info-item">
                                     <span class="info-label">Email</span>
-                                    <span class="info-value">{{ user.email }}</span>
+                                    <span class="info-value">{{ profile_user.email }}</span>
                                 </div>
                                 <div class="info-item">
                                     <span class="info-label">Major</span>
@@ -113,12 +136,45 @@
                                 </div>
                                 <div class="info-item">
                                     <span class="info-label">Member Since</span>
-                                    <span class="info-value">{{ user.date_joined|date:"F Y" }}</span>
+                                    <span class="info-value">{{ profile_user.date_joined|date:"F Y" }}</span>
                                 </div>
                             </div>
                         </div>
                     </div>
 
+                    {% if student_profile.bio %}
+                    <div class="profile-section">
+                        <div class="section-header">
+                            <h2>
+                                <i class="fas fa-user"></i>
+                                About Me
+                            </h2>
+                        </div>
+                        <div class="section-content">
+                            <div class="bio-section">
+                                <p class="bio-text">{{ student_profile.bio }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if student_profile.interests %}
+                    <div class="profile-section">
+                        <div class="section-header">
+                            <h2>
+                                <i class="fas fa-star"></i>
+                                Interests
+                            </h2>
+                        </div>
+                        <div class="section-content">
+                            <div class="bio-section">
+                                <p class="bio-text">{{ student_profile.interests }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if is_own_profile %}
                     <div class="profile-section">
                         <div class="section-header">
                             <h2>
@@ -163,6 +219,7 @@
                             </div>
                         </div>
                     </div>
+                    {% endif %}
                 </div>
             </div>
 
@@ -224,7 +281,7 @@
                                 {% if tutor_profile.bio %}
                                     <p class="bio-text">{{ tutor_profile.bio }}</p>
                                 {% else %}
-                                    <p class="bio-text empty">No bio added yet. Add a bio to help students get to know you better!</p>
+                                    <p class="bio-text empty">No bio added yet.</p>
                                 {% endif %}
                             </div>
                         </div>
@@ -264,11 +321,11 @@
                             <div class="info-grid">
                                 <div class="info-item">
                                     <span class="info-label">Username</span>
-                                    <span class="info-value">{{ user.username }}</span>
+                                    <span class="info-value">{{ profile_user.username }}</span>
                                 </div>
                                 <div class="info-item">
                                     <span class="info-label">Email</span>
-                                    <span class="info-value">{{ user.email }}</span>
+                                    <span class="info-value">{{ profile_user.email }}</span>
                                 </div>
                                 <div class="info-item">
                                     <span class="info-label">Hourly Rate</span>
@@ -280,12 +337,13 @@
                                 </div>
                                 <div class="info-item">
                                     <span class="info-label">Member Since</span>
-                                    <span class="info-value">{{ user.date_joined|date:"F Y" }}</span>
+                                    <span class="info-value">{{ profile_user.date_joined|date:"F Y" }}</span>
                                 </div>
                             </div>
                         </div>
                     </div>
 
+                    {% if is_own_profile %}
                     <div class="profile-section">
                         <div class="section-header">
                             <h2>
@@ -295,7 +353,7 @@
                         </div>
                         <div class="section-content">
                             <div class="action-cards">
-                                <a href="#" class="action-card">
+                                <a href="{% url 'tutoringsession:search_students' %}" class="action-card">
                                     <div class="action-icon">
                                         <i class="fas fa-search"></i>
                                     </div>
@@ -330,6 +388,7 @@
                             </div>
                         </div>
                     </div>
+                    {% endif %}
                 </div>
             </div>
 
@@ -341,13 +400,15 @@
                         <i class="fas fa-user-slash"></i>
                     </div>
                     <h2>No Profile Found</h2>
-                    <p>It looks like you haven't set up your profile yet.</p>
+                    <p>It looks like this user hasn't set up their profile yet.</p>
+                    {% if is_own_profile %}
                     <div class="empty-actions">
                         <a href="{% url 'accounts:signup_choice' %}" class="btn btn-primary">
                             <i class="fas fa-user-plus"></i>
                             <span>Complete Your Profile</span>
                         </a>
                     </div>
+                    {% endif %}
                 </div>
             </div>
         {% endif %}

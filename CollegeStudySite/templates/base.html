@@ -48,8 +48,8 @@
 
                             {% if user|has_tutorprofile %}
                                 <li>
-                                    <a href="#"
-                                    class="{% if request.resolver_match.view_name == 'tutoringsession:find_students' %}active{% endif %}">
+                                    <a href="{% url 'tutoringsession:search_students' %}"
+                                    class="{% if request.resolver_match.view_name == 'tutoringsession:search_students' %}active{% endif %}">
                                         <i class="fas fa-search"></i>
                                         <span>Find Students</span>
                                     </a>
@@ -66,7 +66,7 @@
                                     <a href="{% url 'tutoringsession:index' %}"
                                     class="{% if request.resolver_match.view_name == 'tutoringsession:index' %}active{% endif %}">
                                         <i class="fas fa-chalkboard-teacher"></i>
-                                        <span>Find Tutors</span>
+                                        <span>Tutor Sessions</span>
                                     </a>
                                 </li>
                                 <li>
@@ -156,7 +156,7 @@
                 <div class="footer-column">
                     <h4>For Students</h4>
                     <ul>
-                        <li><a href="{% url 'tutoringsession:index' %}">Find Tutors</a></li>
+                        <li><a href="{% url 'tutoringsession:index' %}">Tutor Sessions</a></li>
                         <li><a href="{% url 'accounts:signup_choice' %}">Sign Up</a></li>
                         <li><a href="{% url 'home:about' %}">How It Works</a></li>
                         <li><a href="{% url 'home:about' %}">Pricing</a></li>

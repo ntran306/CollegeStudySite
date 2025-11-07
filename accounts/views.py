@@ -72,13 +72,27 @@ def logout_view(request):
 # ------------------------------------
 # Profile Page
 # ------------------------------------
-def profile_view(request):
-    user = request.user
-    student_profile = getattr(user, 'studentprofile', None)
-    tutor_profile = getattr(user, 'tutorprofile', None)
+def profile_view(request, username=None):
+    # If username is provided, show that user's profile
+    # Otherwise, show the logged-in user's profile
+    if username:
+        profile_user = get_object_or_404(User, username=username)
+        is_own_profile = request.user.is_authenticated and request.user == profile_user
+    else:
+        # No username provided - must be logged in to view own profile
+        if not request.user.is_authenticated:
+            return redirect('accounts:login')
+        profile_user = request.user
+        is_own_profile = True
+    
+    student_profile = getattr(profile_user, 'studentprofile', None)
+    tutor_profile = getattr(profile_user, 'tutorprofile', None)
+    
     return render(request, 'accounts/profile.html', {
+        'profile_user': profile_user,
         'student_profile': student_profile,
-        'tutor_profile': tutor_profile
+        'tutor_profile': tutor_profile,
+        'is_own_profile': is_own_profile,
     })
 
 # ------------------------------------
@@ -167,8 +181,8 @@ def connect(request, user_id):
     ).exists()
 
     if exists:
-        messages.info(request, f"You’re already connected with {target.username}.")
+        messages.info(request, f"You're already connected with {target.username}.")
     else:
         Friendship.objects.create(user=request.user, friend=target)
-        messages.success(request, f"You’re now connected with {target.username}!")
+        messages.success(request, f"You're now connected with {target.username}!")
     return redirect('accounts:connect')

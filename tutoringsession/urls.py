@@ -5,6 +5,7 @@ app_name = "tutoringsession"
 
 urlpatterns = [
     path("", views.index, name="index"),
-    path("friends/", views.friends_sessions, name="friends_sessions"),
-    path("sessions/<int:session_id>/request/", views.request_session, name="request_session"),
+    path("friends-sessions/", views.friends_sessions, name="friends_sessions"),
+    path("<int:session_id>/request/", views.request_session, name="request_session"),
+    path("search-students/", views.search_students, name="search_students"),
 ]
