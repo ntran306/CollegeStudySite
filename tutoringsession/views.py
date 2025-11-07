@@ -7,6 +7,8 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from accounts.models import Friendship
 from .models import TutoringSession, SessionRequest
+from .utils import haversine
+import json
 
 
 REMOTE_TOKENS = {"remote", "online"}
@@ -78,10 +80,29 @@ def index(request):
     else:
         qs = list(qs)
 
+    # --- Get user's location for distance calculations ---
+    user_lat = None
+    user_lng = None
+    if request.user.is_authenticated and hasattr(request.user, 'latitude') and hasattr(request.user, 'longitude'):
+        user_lat = request.user.latitude
+        user_lng = request.user.longitude
+
     # --- markers for map ---
     markers = []
+    has_map_data = False
+    
     for s in qs:
-        if s.latitude and s.longitude:
+        if s.latitude and s.longitude and not s.is_remote:
+            # Calculate distance if user has location
+            distance_miles = None
+            if user_lat and user_lng:
+                distance_miles = haversine(user_lng, user_lat, s.longitude, s.latitude)
+            
+            # Get tutor avatar (assuming tutor has profile with avatar)
+            avatar_url = "/static/img/avatar-default.png"
+            if hasattr(s.tutor, 'avatar') and s.tutor.avatar:
+                avatar_url = s.tutor.avatar.url
+            
             markers.append({
                 "id": s.id,
                 "lat": float(s.latitude),
@@ -89,12 +110,19 @@ def index(request):
                 "title": s.subject,
                 "location": s.location,
                 "tutor": s.tutor.username,
-                "date": s.date.isoformat(),
+                "date": s.date.isoformat() if s.date else "",
+                "avatar": avatar_url,
+                "distance_miles": round(distance_miles, 1) if distance_miles else None,
             })
+            has_map_data = True
+
+    # Convert markers to JSON for template
+    markers_json = json.dumps(markers)
 
     return render(request, "tutoringsession/index.html", {
         "sessions": qs,
-        "markers": markers,
+        "user_markers_json": markers_json,
+        "has_map_data": has_map_data,
         "GOOGLE_MAPS_API_KEY": getattr(settings, "GOOGLE_MAPS_API_KEY", ""),
         "selected": {
             "subject": subject,

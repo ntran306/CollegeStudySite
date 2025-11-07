@@ -4,6 +4,8 @@ import os
 import json
 import urllib.parse
 import urllib.request
+import requests
+from django.conf import settings
 from django.core.cache import cache
 
 # Calculate radius between lat/long points
@@ -168,3 +170,38 @@ def batch_road_distance_and_time(origin_lat, origin_lng, destinations, *, use_tr
                     cache.set(ck, res, 15*60)
 
     return results
+
+def geocode_address(address):
+    if not address or not address.strip():
+        return None, None
+    
+    api_key = getattr(settings, 'GOOGLE_MAPS_API_KEY_BACKEND', None) or getattr(settings, 'GOOGLE_MAPS_API_KEY', None)
+    
+    if not api_key:
+        print("Warning: No Google Maps API key found in settings")
+        return None, None
+    
+    url = "https://maps.googleapis.com/maps/api/geocode/json"
+    params = {
+        'address': address,
+        'key': api_key
+    }
+    
+    try:
+        response = requests.get(url, params=params, timeout=5)
+        response.raise_for_status()
+        data = response.json()
+        
+        if data.get('status') == 'OK' and data.get('results'):
+            location = data['results'][0]['geometry']['location']
+            lat = location.get('lat')
+            lng = location.get('lng')
+            print(f"✅ Geocoded '{address}' to ({lat}, {lng})")
+            return lat, lng
+        else:
+            print(f"⚠️ Geocoding failed for '{address}': {data.get('status')}")
+            return None, None
+            
+    except requests.RequestException as e:
+        print(f"❌ Geocoding error for '{address}': {e}")
+        return None, None

@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.templatetags.static import static
+from tutoringsession.utils import geocode_address
 
 
 def avatar_upload_path(instance, filename):
@@ -18,6 +19,28 @@ class StudentProfile(models.Model):
     location = models.CharField(max_length=255, blank=True, null=True)
     latitude  = models.FloatField(blank=True, null=True)
     longitude = models.FloatField(blank=True, null=True)
+
+    def save(self, *args, **kwargs):
+        # Auto-geocode if location changed and coordinates are missing
+        if self.location and self.location.strip():
+            # Check if this is a new location or coordinates are missing
+            if self.pk:  # Existing record
+                old_instance = StudentProfile.objects.filter(pk=self.pk).first()
+                location_changed = old_instance and old_instance.location != self.location
+                coords_missing = not self.latitude or not self.longitude
+                
+                if location_changed or coords_missing:
+                    lat, lng = geocode_address(self.location)
+                    if lat and lng:
+                        self.latitude = lat
+                        self.longitude = lng
+            else:  # New record
+                lat, lng = geocode_address(self.location)
+                if lat and lng:
+                    self.latitude = lat
+                    self.longitude = lng
+        
+        super().save(*args, **kwargs)
 
     def avatar_url_or_default(self, request=None):
         if self.avatar:
@@ -52,6 +75,28 @@ class TutorProfile(models.Model):
     location = models.CharField(max_length=255, blank=True, null=True)
     latitude  = models.FloatField(blank=True, null=True)
     longitude = models.FloatField(blank=True, null=True)
+
+    def save(self, *args, **kwargs):
+        # Auto-geocode if location changed and coordinates are missing
+        if self.location and self.location.strip():
+            # Check if this is a new location or coordinates are missing
+            if self.pk:  # Existing record
+                old_instance = TutorProfile.objects.filter(pk=self.pk).first()
+                location_changed = old_instance and old_instance.location != self.location
+                coords_missing = not self.latitude or not self.longitude
+                
+                if location_changed or coords_missing:
+                    lat, lng = geocode_address(self.location)
+                    if lat and lng:
+                        self.latitude = lat
+                        self.longitude = lng
+            else:  # New record
+                lat, lng = geocode_address(self.location)
+                if lat and lng:
+                    self.latitude = lat
+                    self.longitude = lng
+        
+        super().save(*args, **kwargs)
 
     def get_subjects_list(self):
         return [s.strip() for s in self.subjects.split(',')] if self.subjects else []

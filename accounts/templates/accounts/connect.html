@@ -11,7 +11,7 @@
     <div class="section-content">
       <div class="tabs" style="display:flex; gap:.5rem; margin-bottom:1rem;">
         <a href="?tab=find" class="btn {% if tab == 'find' %}btn-primary{% else %}btn-outline-nav{% endif %}">
-          <i class="fas fa-user-plus"></i> Find New
+          <i class="fas fa-user-plus"></i> Find New Friends
           <span class="section-badge" style="margin-left:.5rem;">{{ counts.find|default:0 }}</span>
         </a>
 
@@ -45,6 +45,121 @@
           </div>
         </form>
 
+        {# --- MAP UI (safe for Django templating) --- #}
+        <div class="section-header-inline" style="display:flex; align-items:center; justify-content:space-between; gap:1rem; margin:1rem 0 0.75rem;">
+          <h3><i class="fas fa-map-marked-alt"></i> Nearby students</h3>
+          {% if has_map_data %}
+          <span class="section-badge" id="map-debug-badge" style="background:#22c55e;">
+          {% else %}
+          <span class="section-badge" id="map-debug-badge" style="background:#ef4444;">
+          {% endif %}
+            {% if GOOGLE_MAPS_API_KEY %}
+              {% if has_map_data %}Map ready ({{ users|length }} users){% else %}No mappable users{% endif %}
+            {% else %}
+              Missing GOOGLE_MAPS_API_KEY
+            {% endif %}
+          </span>
+        </div>
+
+        <div id="find-map-wrap" style="background:#fff;border:1px solid var(--border-color);border-radius:16px;box-shadow:var(--shadow-sm);overflow:hidden;margin-bottom:1.25rem;">
+          <div id="find-map" style="width:100%; height:360px;"></div>
+          {% if has_map_data %}
+          <div id="find-map-empty" style="display:none; padding:1rem; color:var(--text-secondary); text-align:center;">
+          {% else %}
+          <div id="find-map-empty" style="display:block; padding:1rem; color:var(--text-secondary); text-align:center;">
+          {% endif %}
+            {% if not GOOGLE_MAPS_API_KEY %}
+              <strong>Map disabled:</strong> add <code>GOOGLE_MAPS_API_KEY</code> to settings/env and allow <code>http://localhost:8000</code> or <code>http://127.0.0.1:8000</code> in Google Maps API referrer restrictions.
+            {% else %}
+              No users with valid coordinates (or they are marked "Remote"). Try adding your study location/coordinates in your profile, or widen your search.
+            {% endif %}
+          </div>
+        </div>
+
+        {% if GOOGLE_MAPS_API_KEY %}
+          <script>
+            // Parse markers coming from Django safely (no backticks)
+            var USER_MARKERS = (function(){
+              try { return JSON.parse('{{ user_markers_json|escapejs }}'); }
+              catch(e){ console.error('Marker parse error', e); return []; }
+            })();
+
+            function initFindMap(){
+              try {
+                var hasData = Array.isArray(USER_MARKERS) && USER_MARKERS.length > 0;
+                var mapEl = document.getElementById('find-map');
+                if (!mapEl) return;
+
+                // Fallback center (Georgia Tech)
+                var fallbackCenter = { lat: 33.7756, lng: -84.3963 };
+
+                var startCenter = hasData ? { lat: USER_MARKERS[0].lat, lng: USER_MARKERS[0].lng } : fallbackCenter;
+                var startZoom   = hasData ? 12 : 11;
+
+                var map = new google.maps.Map(mapEl, {
+                  center: startCenter,
+                  zoom:   startZoom,
+                  mapTypeControl: false,
+                  streetViewControl: false,
+                  fullscreenControl: true
+                });
+
+                if (!hasData) return;
+
+                var info   = new google.maps.InfoWindow();
+                var bounds = new google.maps.LatLngBounds();
+
+                USER_MARKERS.forEach(function(m){
+                  var pos = { lat: m.lat, lng: m.lng };
+                  var marker = new google.maps.Marker({
+                    position: pos,
+                    map: map,
+                    title: m.username
+                  });
+                  bounds.extend(pos);
+
+                  // Build popup HTML using classic string concat (no template literals)
+                  var safeUser  = String(m.username || '').replace(/</g,'&lt;');
+                  var safeLoc   = String(m.study_location || '').replace(/</g,'&lt;');
+                  var eta       = (m.drive_minutes != null)  ? (m.drive_minutes + ' min') : '—';
+                  var dist      = (m.distance_miles != null) ? (m.distance_miles + ' mi') : '—';
+
+                  var html  = '<div style="min-width:220px;max-width:280px;">';
+                      html += '  <div style="display:flex;gap:10px;align-items:center;">';
+                      html += '    <img src="' + m.avatar + '" alt="' + safeUser + '" style="width:40px;height:40px;border-radius:50%;object-fit:cover;">';
+                      html += '    <div><strong>' + safeUser + '</strong><br/>';
+                      html += '      <small style="color:#64748b;">' + safeLoc + '</small>';
+                      html += '    </div>';
+                      html += '  </div>';
+                      html += '  <div style="margin-top:8px;color:#334155;font-size:.95rem;">';
+                      html += '    <span style="display:inline-block;margin-right:10px;">🚗 ' + eta  + '</span>';
+                      html += '    <span>📍 ' + dist + '</span>';
+                      html += '  </div>';
+                      html += '</div>';
+
+                  marker.addListener('click', function(){
+                    info.setContent(html);
+                    info.open({ anchor: marker, map: map });
+                  });
+                });
+
+                if (!bounds.isEmpty()) {
+                  map.fitBounds(bounds, 64);
+                }
+              } catch (err) {
+                console.error('initFindMap error:', err);
+                var badge = document.getElementById('map-debug-badge');
+                if (badge) { badge.textContent = 'Map init failed'; badge.style.background = '#ef4444'; }
+              }
+            }
+
+            // Expose global for Google callback
+            window.initFindMap = initFindMap;
+          </script>
+
+          <script src="https://maps.googleapis.com/maps/api/js?key={{ GOOGLE_MAPS_API_KEY }}&callback=initFindMap" async defer></script>
+        {% endif %}
+
         <h3 style="margin:1rem 0;">Suggestions ({{ users|length }})</h3>
         {% if users %}
           <div class="action-cards">
@@ -60,6 +175,8 @@
                     Student
                   {% endif %}
                   {% if u.email %} • {{ u.email }}{% endif %}
+                  {% if u.distance_miles %} • ~{{ u.distance_miles }} mi{% endif %}
+                  {% if u.drive_minutes %} • ~{{ u.drive_minutes }} min{% endif %}
                 </p>
               </div>
               <a href="{% url 'accounts:connect_request' u.id %}" class="btn btn-primary">
@@ -100,7 +217,7 @@
             {% endfor %}
           </div>
         {% else %}
-          <div class="empty-state">You haven’t connected with anyone yet.</div>
+          <div class="empty-state">You haven't connected with anyone yet.</div>
         {% endif %}
       {% endif %}
 

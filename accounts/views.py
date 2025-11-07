@@ -1,14 +1,18 @@
+import json
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
+from django.conf import settings
+from django.templatetags.static import static
 from django.db.models import Q
 from .models import StudentProfile, TutorProfile, Friendship, FriendRequest
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect, get_object_or_404
 from .forms import TutorProfileForm, StudentProfileForm, TutorSignUpForm, StudentSignUpForm
+from tutoringsession.utils import haversine, batch_road_distance_and_time
 
 
 # ------------------------------------
@@ -79,6 +83,15 @@ def profile_view(request):
         'tutor_profile': tutor_profile
     })
 
+def _get_user_profile(u):
+    sp = getattr(u, "studentprofile", None)
+    if sp is not None:
+        return sp, "student"
+    tp = getattr(u, "tutorprofile", None)
+    if tp is not None:
+        return tp, "tutor"
+    return None, None
+
 # ------------------------------------
 # Edit Profile
 # ------------------------------------
@@ -117,49 +130,155 @@ def edit_profile_view(request):
 def connect_list(request):
     tab = (request.GET.get('tab') or 'find').lower()
     q = (request.GET.get('q') or '').strip()
+    users = []  # defensive init
+
+    # Location/radius params
+    location = (request.GET.get('location') or '').strip()
+    lat = request.GET.get('lat')
+    lng = request.GET.get('lng')
+    radius_raw = request.GET.get('radius') or ''
+    try:
+        radius_miles = max(1, int(radius_raw)) if radius_raw else 15
+    except ValueError:
+        radius_miles = 15
 
     # Existing friendships (undirected)
     pairs = Friendship.objects.filter(Q(user=request.user) | Q(friend=request.user))
-    connected_ids = set()
-    for f in pairs:
-        connected_ids.add(f.user_id if f.user_id != request.user.id else f.friend_id)
+    connected_ids = {f.user_id if f.user_id != request.user.id else f.friend_id for f in pairs}
 
-    # Users with any pending relation (either direction)
+    # Pending (either direction)
     pending_qs = FriendRequest.objects.filter(
         Q(from_user=request.user) | Q(to_user=request.user),
         status=FriendRequest.PENDING,
     )
-
-    # Correct way to gather both columns into one set of IDs
     pending_with_ids = set()
     for fu, tu in pending_qs.values_list("from_user_id", "to_user_id"):
         pending_with_ids.add(fu)
         pending_with_ids.add(tu)
 
-    # Base "Find" queryset: exclude self, existing friends, anyone with pending state
-    users = (
+    # Base queryset
+    users_qs = (
         User.objects
         .exclude(id=request.user.id)
         .exclude(id__in=connected_ids)
         .exclude(id__in=pending_with_ids)
+        .select_related("studentprofile", "tutorprofile")
+        .order_by("username")
     )
 
+    # ✅ APPLY FILTERS BEFORE MATERIALIZING
     if q:
-        users = users.filter(
+        users_qs = users_qs.filter(
             Q(username__icontains=q) |
             Q(first_name__icontains=q) |
             Q(last_name__icontains=q) |
             Q(email__icontains=q)
         )
 
-    users = users.order_by('username')
-    friends = User.objects.filter(id__in=list(connected_ids)).order_by('username')
+    if location and not (lat and lng):
+        users_qs = users_qs.filter(
+            Q(studentprofile__location__icontains=location) |
+            Q(tutorprofile__location__icontains=location)
+        )
 
-    # For the Pending tab + counts
+    # Now materialize and attach a unified .profile
+    users = list(users_qs)
+    for u in users:
+        sp = getattr(u, "studentprofile", None)
+        tp = getattr(u, "tutorprofile", None)
+        u.profile = sp if sp is not None else tp
+        u.profile_role = "student" if sp is not None else ("tutor" if tp is not None else None)
+
+    # Radius/road-distance filter (optional)
+    if location and lat and lng:
+        try:
+            o_lat = float(lat); o_lng = float(lng)
+
+            dests = []
+            for u in users:
+                p = getattr(u, "profile", None)
+                if p and getattr(p, "latitude", None) is not None and getattr(p, "longitude", None) is not None:
+                    dests.append((float(p.latitude), float(p.longitude), u.id))
+
+            if dests:
+                dm_results = batch_road_distance_and_time(
+                    o_lat, o_lng, dests, use_traffic=True, traffic_model="best_guess"
+                )
+                kept = []
+                for u in users:
+                    res = dm_results.get(u.id)
+                    if not res:
+                        continue
+                    dist = res.get("distance_miles")
+                    if dist is None or dist > float(radius_miles):
+                        continue
+                    u.distance_miles = round(dist, 1)
+                    drive_min = res.get("duration_in_traffic_minutes") or res.get("duration_minutes")
+                    u.drive_minutes = round(drive_min, 1) if drive_min is not None else None
+                    kept.append(u)
+
+                users = sorted(
+                    kept,
+                    key=lambda x: (
+                        x.distance_miles if getattr(x, "distance_miles", None) is not None else 1e9,
+                        x.drive_minutes if getattr(x, "drive_minutes", None) is not None else 1e9,
+                        x.username.lower(),
+                    )
+                )
+            # else: nobody has coords → leave `users` as-is
+
+        except ValueError:
+            # bad coords; fallback to simple substring match in Python
+            users = [
+                u for u in users
+                if getattr(u, "profile", None)
+                and getattr(u.profile, "location", None)
+                and location.lower() in u.profile.location.lower()
+            ]
+
+    # 🔎 Build map markers from ALL users with coordinates (not just filtered by location)
+    # Get ALL potential users for the map (not filtered by search query)
+    all_mappable_users = (
+        User.objects
+        .exclude(id=request.user.id)
+        .exclude(id__in=connected_ids)
+        .exclude(id__in=pending_with_ids)
+        .select_related("studentprofile", "tutorprofile")
+    )
+    
+    markers = []
+    for u in all_mappable_users:
+        sp = getattr(u, "studentprofile", None)
+        tp = getattr(u, "tutorprofile", None)
+        p = sp if sp is not None else tp
+        
+        if not p:
+            continue
+        if not getattr(p, "latitude", None) or not getattr(p, "longitude", None):
+            continue
+        if str(getattr(p, "location", "") or "").strip().lower() == "remote":
+            continue
+        
+        markers.append({
+            "id": u.id,
+            "username": u.username,
+            "study_location": p.location or "",
+            "lat": float(p.latitude),
+            "lng": float(p.longitude),
+            "avatar": (p.avatar.url if getattr(p, "avatar", None) else static("img/avatar-placeholder.png")),
+            "distance_miles": None,  # No distance calculation without origin
+            "drive_minutes": None,
+        })
+
+    user_markers_json = json.dumps(markers)
+    has_map_data = bool(markers)
+    map_api_key = settings.GOOGLE_MAPS_API_KEY
+
+    # Friends + pending (unchanged)
+    friends = User.objects.filter(id__in=list(connected_ids)).order_by('username')
     incoming = FriendRequest.objects.filter(
         to_user=request.user, status=FriendRequest.PENDING
     ).select_related("from_user").order_by("-created_at")
-
     outgoing = FriendRequest.objects.filter(
         from_user=request.user, status=FriendRequest.PENDING
     ).select_related("to_user").order_by("-created_at")
@@ -170,15 +289,18 @@ def connect_list(request):
         "query": q,
         "tab": "find" if tab not in ("find", "friends", "pending") else tab,
         "counts": {
-            "find": users.count(),
+            "find": len(users),
             "friends": friends.count(),
             "pending_in": incoming.count(),
             "pending_out": outgoing.count(),
         },
+        "request": request,  # so template can echo form values
+        # map props for the template:
+        "user_markers_json": user_markers_json,
+        "has_map_data": has_map_data,
+        "GOOGLE_MAPS_API_KEY": map_api_key,
     }
-
-    # Only attach these when the template needs them
-    if tab == "pending":
+    if ctx["tab"] == "pending":
         ctx.update({"incoming": incoming, "outgoing": outgoing})
 
     return render(request, "accounts/connect.html", ctx)
@@ -197,7 +319,7 @@ def connect_request(request, user_id):
         Q(user=request.user, friend=target) | Q(user=target, friend=request.user)
     ).exists()
     if exists:
-        messages.info(request, f"You’re already connected with {target.username}.")
+        messages.info(request, f"You're already connected with {target.username}.")
         return redirect('accounts:connect')
 
     # if they already sent you a pending request, auto-accept

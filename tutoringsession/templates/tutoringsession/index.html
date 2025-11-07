@@ -16,7 +16,7 @@
       </div>
       <h1 class="hero-title">Browse Tutoring Sessions</h1>
       <p class="hero-subtitle">
-        Filter by subject, tutor, location (or “remote”), date, time, and capacity type. Click request to join.
+        Filter by subject, tutor, location (or "remote"), date, time, and capacity type. Click request to join.
       </p>
 
       <div class="hero-cta">
@@ -26,7 +26,7 @@
         </a>
         <a href="{% url 'tutoringsession:friends_sessions' %}" class="btn btn-secondary btn-hero">
           <i class="fas fa-user-friends"></i>
-          <span>Friends’ Sessions</span>
+          <span>Friends' Sessions</span>
         </a>
       </div>
     </div>
@@ -62,12 +62,12 @@
             <label class="form-label" for="location">Location</label>
             <input id="location" name="location" type="text" class="auth-form-input"
                    value="{{ selected.location }}" placeholder="Campus, library, or 'remote'">
-            <div class="form-help"><i class="fas fa-info-circle"></i> Use “remote” or “online” to see virtual sessions.</div>
+            <div class="form-help"><i class="fas fa-info-circle"></i> Use "remote" or "online" to see virtual sessions.</div>
           </div>
 
           <div class="form-group">
             <label class="form-label" for="date">Date</label>
-            <input id="date" name="date" type="date" class="auth-form-input" value="{{ selected.date }}">
+            <input id="date" name="date" type="date" class="auth-form-input" value="{{ selected.date }}" style="font-family: inherit;">
           </div>
         </div>
 
@@ -76,7 +76,7 @@
             <label class="form-label" for="time">Time</label>
             <input id="time" name="time" type="text" class="auth-form-input"
                    value="{{ selected.time }}" placeholder="HH:MM or 3:30 PM">
-            <div class="form-help"><i class="fas fa-info-circle"></i> Matches sessions whose time range contains this time; sessions with blank times count as “any time”.</div>
+            <div class="form-help"><i class="fas fa-info-circle"></i> Matches sessions whose time range contains this time; sessions with blank times count as "any time".</div>
           </div>
 
           <div class="form-group">
@@ -106,32 +106,150 @@
 </section>
 
 <!-- =========================
-     Map
+     Map Section
 ========================== -->
-{% if GOOGLE_MAPS_API_KEY %}
 <section class="section-container">
   <div class="profile-section">
-    <div class="section-header" style="display:flex; align-items:center; justify-content:space-between; gap:1rem;">
-      <h2 style="margin:0;"><i class="fas fa-map-marker-alt"></i> Map</h2>
-
-      <!-- Map controls (reuses your button/input styles via CSS vars) -->
-      <div class="form-row" style="margin:0; display:flex; align-items:center; gap:.75rem;">
-        <label class="form-label" for="radius-miles" style="margin:0;">Radius (mi)</label>
-        <input id="radius-miles" type="number" step="0.1" min="0.1" value="3"
-               class="auth-form-input" style="width:6.5rem; padding:.4rem .6rem;">
-        <button id="use-my-location" class="btn btn-secondary" type="button" title="Center to my location">
-          <i class="fas fa-location-arrow"></i> Use my location
-        </button>
-      </div>
+    <div class="section-header-inline" style="display:flex; align-items:center; justify-content:space-between; gap:1rem; margin-bottom:0.75rem;">
+      <h2><i class="fas fa-map-marked-alt"></i> Nearby Sessions</h2>
+      {% if has_map_data %}
+      <span class="section-badge" id="map-debug-badge" style="background:#22c55e;">
+      {% else %}
+      <span class="section-badge" id="map-debug-badge" style="background:#ef4444;">
+      {% endif %}
+        {% if GOOGLE_MAPS_API_KEY %}
+          {% if has_map_data %}Map ready ({{ sessions|length }} sessions){% else %}No mappable sessions{% endif %}
+        {% else %}
+          Missing GOOGLE_MAPS_API_KEY
+        {% endif %}
+      </span>
     </div>
 
     <div class="section-content">
-      <div id="map"
-           style="width:100%; height:380px; border-radius: var(--radius-lg); box-shadow: var(--shadow-md); border:1px solid var(--border-color);"></div>
+      <div id="session-map-wrap" style="background:#fff;border:1px solid var(--border-color);border-radius:16px;box-shadow:var(--shadow-sm);overflow:hidden;margin-bottom:1.25rem;">
+        <div id="session-map" style="width:100%; height:420px;"></div>
+        {% if has_map_data %}
+        <div id="session-map-empty" style="display:none; padding:1rem; color:var(--text-secondary); text-align:center;">
+        {% else %}
+        <div id="session-map-empty" style="display:block; padding:1rem; color:var(--text-secondary); text-align:center;">
+        {% endif %}
+          {% if not GOOGLE_MAPS_API_KEY %}
+            <strong>Map disabled:</strong> add <code>GOOGLE_MAPS_API_KEY</code> to settings/env and allow your domain in Google Maps API referrer restrictions.
+          {% else %}
+            No sessions with valid coordinates (or they are marked "Remote"). Try adding location/coordinates to sessions, or widen your search.
+          {% endif %}
+        </div>
+      </div>
+
+      {% if GOOGLE_MAPS_API_KEY %}
+        <script>
+          // Parse markers coming from Django safely (no backticks)
+          var SESSION_MARKERS = (function(){
+            try { return JSON.parse('{{ user_markers_json|escapejs }}'); }
+            catch(e){ console.error('Marker parse error', e); return []; }
+          })();
+
+          function initSessionMap(){
+            try {
+              var hasData = Array.isArray(SESSION_MARKERS) && SESSION_MARKERS.length > 0;
+              var mapEl = document.getElementById('session-map');
+              if (!mapEl) return;
+
+              // Fallback center (Georgia Tech)
+              var fallbackCenter = { lat: 33.7756, lng: -84.3963 };
+
+              var startCenter = hasData ? { lat: SESSION_MARKERS[0].lat, lng: SESSION_MARKERS[0].lng } : fallbackCenter;
+              var startZoom   = hasData ? 12 : 11;
+
+              var map = new google.maps.Map(mapEl, {
+                center: startCenter,
+                zoom:   startZoom,
+                mapTypeControl: false,
+                streetViewControl: false,
+                fullscreenControl: true
+              });
+
+              if (!hasData) return;
+
+              var info   = new google.maps.InfoWindow();
+              var bounds = new google.maps.LatLngBounds();
+
+              SESSION_MARKERS.forEach(function(m){
+                var pos = { lat: m.lat, lng: m.lng };
+                var marker = new google.maps.Marker({
+                  position: pos,
+                  map: map,
+                  title: m.title,
+                  icon: {
+                    path: google.maps.SymbolPath.CIRCLE,
+                    scale: 10,
+                    fillColor: '#3b82f6',
+                    fillOpacity: 0.9,
+                    strokeColor: '#1e40af',
+                    strokeWeight: 2
+                  }
+                });
+                bounds.extend(pos);
+
+                // Build popup HTML using classic string concat (no template literals)
+                var safeTitle = String(m.title || '').replace(/</g,'&lt;');
+                var safeLoc   = String(m.location || '').replace(/</g,'&lt;');
+                var safeTutor = String(m.tutor || '').replace(/</g,'&lt;');
+                var dist      = (m.distance_miles != null) ? (m.distance_miles + ' mi') : '';
+
+                var html  = '<div style="min-width:220px;max-width:280px;">';
+                    html += '  <div style="display:flex;gap:10px;align-items:center;">';
+                    html += '    <img src="' + m.avatar + '" alt="' + safeTutor + '" style="width:40px;height:40px;border-radius:50%;object-fit:cover;">';
+                    html += '    <div><strong>' + safeTitle + '</strong><br/>';
+                    html += '      <small style="color:#64748b;">' + safeLoc + '</small>';
+                    html += '    </div>';
+                    html += '  </div>';
+                    html += '  <div style="margin-top:8px;color:#334155;font-size:.95rem;">';
+                    html += '    <span style="display:inline-block;margin-right:10px;">👨‍🏫 ' + safeTutor  + '</span>';
+                    if (dist) {
+                      html += '    <span>📍 ' + dist + '</span>';
+                    }
+                    html += '  </div>';
+                    html += '  <div style="margin-top:8px;">';
+                    html += '    <a href="#session-' + m.id + '" style="color:#3b82f6;text-decoration:none;font-weight:500;">View details →</a>';
+                    html += '  </div>';
+                    html += '</div>';
+
+                marker.addListener('click', function(){
+                  info.setContent(html);
+                  info.open({ anchor: marker, map: map });
+                  
+                  // Scroll to session card
+                  var card = document.getElementById('session-' + m.id);
+                  if (card) {
+                    card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    card.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.3)';
+                    setTimeout(function() {
+                      card.style.boxShadow = '';
+                    }, 2000);
+                  }
+                });
+              });
+
+              if (!bounds.isEmpty()) {
+                map.fitBounds(bounds, 64);
+              }
+            } catch (err) {
+              console.error('initSessionMap error:', err);
+              var badge = document.getElementById('map-debug-badge');
+              if (badge) { badge.textContent = 'Map init failed'; badge.style.background = '#ef4444'; }
+            }
+          }
+
+          // Expose global for Google callback
+          window.initSessionMap = initSessionMap;
+        </script>
+
+        <script src="https://maps.googleapis.com/maps/api/js?key={{ GOOGLE_MAPS_API_KEY }}&callback=initSessionMap" async defer></script>
+      {% endif %}
     </div>
   </div>
 </section>
-{% endif %}
 
 <!-- =========================
      Results
@@ -209,7 +327,7 @@
         <div class="empty-profile" style="padding:3rem 1.5rem;">
           <div class="empty-icon"><i class="far fa-calendar-times"></i></div>
           <h2>No sessions match your filters</h2>
-          <p>Try broadening your search (different date/time or remove “Include full”).</p>
+          <p>Try broadening your search (different date/time or remove "Include full").</p>
           <div class="empty-actions">
             <a href="{% url 'tutoringsession:index' %}" class="btn btn-secondary">Clear Filters</a>
           </div>
@@ -219,189 +337,4 @@
   </div>
 </section>
 
-{% if GOOGLE_MAPS_API_KEY %}
-  {{ markers|json_script:"session-markers" }}
-{% endif %}
-
-{% endblock %}
-
-{% block extra_js %}
-{% if GOOGLE_MAPS_API_KEY %}
-<script>
-(function () {
-  const MILES_TO_METERS = 1609.344;
-  let map, blueCircle, userMarker;
-
-  function drawCircle(center, miles) {
-    const radiusMeters = (parseFloat(miles) || 0) * MILES_TO_METERS;
-    if (blueCircle) blueCircle.setMap(null);
-    blueCircle = new google.maps.Circle({
-      map,
-      center,
-      radius: radiusMeters > 0 ? radiusMeters : 0,
-      strokeColor: '#1e3a8a',
-      strokeOpacity: 0.8,
-      strokeWeight: 1,
-      fillColor: '#3b82f6',
-      fillOpacity: 0.15,
-    });
-  }
-
-  function setUserMarker(center) {
-    if (!userMarker) {
-      userMarker = new google.maps.Marker({
-        map,
-        position: center,
-        title: 'Selected Center',
-        icon: {
-          path: google.maps.SymbolPath.CIRCLE,
-          scale: 6,
-          strokeColor: '#2563eb',
-          fillColor: '#2563eb',
-          fillOpacity: 1
-        }
-      });
-    } else {
-      userMarker.setPosition(center);
-    }
-  }
-
-  function highlightListItem(id) {
-    const li = document.getElementById("session-" + id);
-    if (li) {
-      li.scrollIntoView({ behavior: "smooth", block: "center" });
-      li.style.boxShadow = "0 0 0 3px rgba(37, 99, 235, 0.25)";
-      setTimeout(() => (li.style.boxShadow = ""), 1200);
-    }
-  }
-
-  function init() {
-    const dataEl = document.getElementById("session-markers");
-    const markers = dataEl ? JSON.parse(dataEl.textContent) : [];
-    const mapEl = document.getElementById("map");
-    if (!mapEl) return;
-
-    const fallback = { lat: 33.7756, lng: -84.3963 }; // GT campus
-    const initialCenter = markers.length ? { lat: markers[0].lat, lng: markers[0].lng } : fallback;
-
-    map = new google.maps.Map(mapEl, {
-      center: initialCenter,
-      zoom: markers.length ? 12 : 11,
-      mapTypeControl: false,
-      streetViewControl: false,
-      fullscreenControl: true
-    });
-
-    // Blue circle initial state (based on control)
-    const radiusInput = document.getElementById('radius-miles');
-    setUserMarker(initialCenter);
-    drawCircle(initialCenter, radiusInput ? radiusInput.value : 3);
-
-    // “Use my location”
-    const useMyLocBtn = document.getElementById('use-my-location');
-    useMyLocBtn?.addEventListener('click', () => {
-      if (!navigator.geolocation) return;
-      navigator.geolocation.getCurrentPosition((pos) => {
-        const c = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-        map.panTo(c);
-        setUserMarker(c);
-        drawCircle(c, radiusInput ? radiusInput.value : 3);
-      });
-    });
-
-    // Update circle when radius changes
-    radiusInput?.addEventListener('input', (e) => {
-      const center = userMarker?.getPosition() || map.getCenter();
-      drawCircle(center, e.target.value);
-    });
-
-    // --- Advanced avatar markers for sessions ---
-    const bounds = new google.maps.LatLngBounds();
-    const info = new google.maps.InfoWindow();
-    const { AdvancedMarkerElement } = google.maps.marker || {};
-    const useAdvanced = Boolean(AdvancedMarkerElement);
-
-    markers.forEach(m => {
-      const position = { lat: m.lat, lng: m.lng };
-
-      let markerObj;
-      if (useAdvanced) {
-        // Build pill with avatar + name
-        const pin = document.createElement("div");
-        pin.style.cssText = `
-          display:flex; align-items:center; gap:6px; padding:4px 8px;
-          background:var(--bg-elevated, #fff); border:1px solid var(--border-color, #e5e7eb);
-          border-radius:999px; box-shadow:var(--shadow-sm, 0 1px 2px rgba(0,0,0,.08));
-          transform:translateY(-6px);
-        `;
-
-        const img = document.createElement("img");
-        img.src = m.avatar || "{% static 'img/avatar-default.png' %}";
-        img.alt = (m.tutor || "Tutor");
-        img.referrerPolicy = "no-referrer";
-        img.style.cssText = "width:24px; height:24px; border-radius:999px; object-fit:cover;";
-        pin.appendChild(img);
-
-        const label = document.createElement("span");
-        label.textContent = m.tutor || "";
-        label.style.cssText = "font-size:12px; font-weight:600; color:var(--text, #111827);";
-        pin.appendChild(label);
-
-        markerObj = new AdvancedMarkerElement({
-          map,
-          position,
-          content: pin,
-          title: m.title || m.tutor
-        });
-
-        markerObj.addListener("gmp-click", () => {
-          info.setContent(`
-            <div style="min-width:220px; display:flex; gap:10px; align-items:center;">
-              <img src="${m.avatar || ''}" alt="${m.tutor || 'Tutor'}"
-                   style="width:40px;height:40px;border-radius:50%;object-fit:cover;">
-              <div>
-                <strong>${m.title ?? ''}</strong><br>
-                <small>${m.location ?? ''}</small><br>
-                <small>Tutor: ${m.tutor ?? ''} • ${m.date ?? ''}</small><br>
-                <a href="#session-${m.id}">View in list</a>
-              </div>
-            </div>
-          `);
-          info.open(map, markerObj);
-          highlightListItem(m.id);
-        });
-      } else {
-        // Fallback to default Marker if Advanced markers not available
-        markerObj = new google.maps.Marker({
-          map,
-          position,
-          title: m.title || m.tutor
-        });
-        markerObj.addListener("click", () => {
-          info.setContent(`
-            <div style="min-width:200px;">
-              <strong>${m.title ?? ''}</strong><br>
-              <small>${m.location ?? ''}</small><br>
-              <small>Tutor: ${m.tutor ?? ''} • ${m.date ?? ''}</small><br>
-              <a href="#session-${m.id}">View in list</a>
-            </div>
-          `);
-          info.open(map, markerObj);
-          highlightListItem(m.id);
-        });
-      }
-
-      bounds.extend(position);
-    });
-
-    if (markers.length > 1) map.fitBounds(bounds);
-  }
-
-  window.__initSessionsMap = init;
-})();
-</script>
-
-<!-- Need Marker Library -->
-<script async defer src="https://maps.googleapis.com/maps/api/js?key={{ GOOGLE_MAPS_API_KEY }}&libraries=marker&callback=__initSessionsMap"></script>
-{% endif %}
 {% endblock %}
