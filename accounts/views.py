@@ -376,7 +376,7 @@ def connect_requests(request):
 @login_required
 def connect_accept(request, pk):
     if request.method != "POST":
-        return redirect('accounts:connect_requests')
+        return redirect('accounts:connect')
     fr = get_object_or_404(FriendRequest, pk=pk, to_user=request.user, status=FriendRequest.PENDING)
     # create friendship (canonical order)
     u, v = (fr.from_user, fr.to_user)
@@ -386,26 +386,26 @@ def connect_accept(request, pk):
     fr.status = FriendRequest.ACCEPTED
     fr.save(update_fields=["status"])
     messages.success(request, f"You are now connected with {fr.from_user.username}.")
-    return redirect('accounts:connect_requests')
+    return redirect('accounts:connect')
 
 
 @login_required
 def connect_decline(request, pk):
     if request.method != "POST":
-        return redirect('accounts:connect_requests')
+        return redirect('accounts:connect')
     fr = get_object_or_404(FriendRequest, pk=pk, to_user=request.user, status=FriendRequest.PENDING)
     fr.status = FriendRequest.DECLINED
     fr.save(update_fields=["status"])
     messages.info(request, f"Declined request from {fr.from_user.username}.")
-    return redirect('accounts:connect_requests')
+    return redirect('accounts:connect')
 
 
 @login_required
 def connect_cancel(request, pk):
     if request.method != "POST":
-        return redirect('accounts:connect_requests')
+        return redirect('accounts:connect')
     fr = get_object_or_404(FriendRequest, pk=pk, from_user=request.user, status=FriendRequest.PENDING)
     fr.status = FriendRequest.CANCELED
     fr.save(update_fields=["status"])
     messages.info(request, f"Canceled request to {fr.to_user.username}.")
-    return redirect('accounts:connect_requests')
+    return redirect('accounts:connect')

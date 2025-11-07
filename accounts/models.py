@@ -21,24 +21,36 @@ class StudentProfile(models.Model):
     longitude = models.FloatField(blank=True, null=True)
 
     def save(self, *args, **kwargs):
-        # Auto-geocode if location changed and coordinates are missing
+        """
+        Override save to automatically geocode the location when:
+        1. It's a new profile (no pk yet)
+        2. The location has changed
+        3. Coordinates are missing but location exists
+        """
         if self.location and self.location.strip():
-            # Check if this is a new location or coordinates are missing
+            should_geocode = False
+            
             if self.pk:  # Existing record
-                old_instance = StudentProfile.objects.filter(pk=self.pk).first()
-                location_changed = old_instance and old_instance.location != self.location
-                coords_missing = not self.latitude or not self.longitude
-                
-                if location_changed or coords_missing:
-                    lat, lng = geocode_address(self.location)
-                    if lat and lng:
-                        self.latitude = lat
-                        self.longitude = lng
+                try:
+                    old_instance = StudentProfile.objects.get(pk=self.pk)
+                    location_changed = old_instance.location != self.location
+                    coords_missing = not self.latitude or not self.longitude
+                    
+                    if location_changed or coords_missing:
+                        should_geocode = True
+                except StudentProfile.DoesNotExist:
+                    should_geocode = True
             else:  # New record
+                should_geocode = True
+            
+            if should_geocode:
                 lat, lng = geocode_address(self.location)
                 if lat and lng:
                     self.latitude = lat
                     self.longitude = lng
+                    print(f"✅ Student geocoded '{self.location}' to ({lat}, {lng})")
+                else:
+                    print(f"⚠️ Could not geocode student location: '{self.location}'")
         
         super().save(*args, **kwargs)
 
@@ -77,24 +89,36 @@ class TutorProfile(models.Model):
     longitude = models.FloatField(blank=True, null=True)
 
     def save(self, *args, **kwargs):
-        # Auto-geocode if location changed and coordinates are missing
+        """
+        Override save to automatically geocode the location when:
+        1. It's a new profile (no pk yet)
+        2. The location has changed
+        3. Coordinates are missing but location exists
+        """
         if self.location and self.location.strip():
-            # Check if this is a new location or coordinates are missing
+            should_geocode = False
+            
             if self.pk:  # Existing record
-                old_instance = TutorProfile.objects.filter(pk=self.pk).first()
-                location_changed = old_instance and old_instance.location != self.location
-                coords_missing = not self.latitude or not self.longitude
-                
-                if location_changed or coords_missing:
-                    lat, lng = geocode_address(self.location)
-                    if lat and lng:
-                        self.latitude = lat
-                        self.longitude = lng
+                try:
+                    old_instance = TutorProfile.objects.get(pk=self.pk)
+                    location_changed = old_instance.location != self.location
+                    coords_missing = not self.latitude or not self.longitude
+                    
+                    if location_changed or coords_missing:
+                        should_geocode = True
+                except TutorProfile.DoesNotExist:
+                    should_geocode = True
             else:  # New record
+                should_geocode = True
+            
+            if should_geocode:
                 lat, lng = geocode_address(self.location)
                 if lat and lng:
                     self.latitude = lat
                     self.longitude = lng
+                    print(f"✅ Tutor geocoded '{self.location}' to ({lat}, {lng})")
+                else:
+                    print(f"⚠️ Could not geocode tutor location: '{self.location}'")
         
         super().save(*args, **kwargs)
 
