@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="dashboard-page">
+    <div class="dashboard-container">
+        
+        <!-- Dashboard Header -->
+        <div class="dashboard-header">
+            <div class="dashboard-header-content">
+                <div class="dashboard-title-section">
+                    <h1>
+                        <i class="fas fa-calendar-alt"></i>
+                        Your Tutoring Sessions
+                    </h1>
+                    <p class="dashboard-subtitle">Manage your upcoming sessions and availability</p>
+                </div>
+                <a href="{% url 'tutoringsession:create' %}" class="btn btn-primary btn-lg">
+                    <i class="fas fa-plus"></i>
+                    <span>Create New Session</span>
+                </a>
+            </div>
+
+            {% if sessions %}
+            <div class="dashboard-stats">
+                <div class="stat-pill">
+                    <i class="fas fa-calendar-check"></i>
+                    <span>{{ sessions|length }} Total Session{{ sessions|length|pluralize }}</span>
+                </div>
+                <div class="stat-pill">
+                    <i class="fas fa-users"></i>
+                    <span>{{ sessions|length|add:"0" }} Student{{ sessions|length|pluralize }} Enrolled</span>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Sessions Grid -->
+        {% if sessions %}
+            <div class="sessions-grid">
+                {% for s in sessions %}
+                    <div class="session-card">
+                        <div class="session-card-header">
+                            <div class="session-subject">
+                                <i class="fas fa-book"></i>
+                                <h3>{{ s.subject }}</h3>
+                            </div>
+                            <div class="session-badge">
+                                {% if s.is_remote %}
+                                    <i class="fas fa-laptop"></i>
+                                    <span>Remote</span>
+                                {% else %}
+                                    <i class="fas fa-map-marker-alt"></i>
+                                    <span>In-Person</span>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="session-card-body">
+                            <div class="session-info-row">
+                                <div class="session-info-item">
+                                    <i class="fas fa-calendar"></i>
+                                    <span>{{ s.date|date:"M d, Y" }}</span>
+                                </div>
+                                {% if s.start_time %}
+                                    <div class="session-info-item">
+                                        <i class="fas fa-clock"></i>
+                                        <span>{{ s.start_time|time:"g:i A" }} - {{ s.end_time|time:"g:i A" }}</span>
+                                    </div>
+                                {% else %}
+                                    <div class="session-info-item">
+                                        <i class="fas fa-clock"></i>
+                                        <span>Flexible timing</span>
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="session-capacity">
+                                <div class="capacity-info">
+                                    <i class="fas fa-users"></i>
+                                    <span>{{ s.seats_taken|default:"0" }} / {{ s.capacity }} students</span>
+                                </div>
+                                <div class="capacity-bar">
+                                    <div class="capacity-bar">
+                                        <div class="capacity-fill"
+                                            data-taken="{{ s.seats_taken }}"
+                                            data-capacity="{{ s.capacity }}">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {% if s.description %}
+                                <div class="session-description">
+                                    <p>{{ s.description|truncatewords:20 }}</p>
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="session-card-footer">
+                            <a href="{% url 'tutoringsession:detail' s.id %}" class="btn btn-outline-small">
+                                <i class="fas fa-eye"></i>
+                                <span>View</span>
+                            </a>
+                            <a href="{% url 'tutoringsession:edit' s.id %}" class="btn btn-outline-small">
+                                <i class="fas fa-edit"></i>
+                                <span>Edit</span>
+                            </a>
+                            <a href="{% url 'tutoringsession:delete' s.id %}" class="btn btn-outline-danger-small">
+                                <i class="fas fa-trash"></i>
+                                <span>Delete</span>
+                            </a>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+
+        {% else %}
+            <!-- Empty State -->
+            <div class="dashboard-empty">
+                <div class="empty-icon">
+                    <i class="fas fa-calendar-plus"></i>
+                </div>
+                <h2>No Sessions Yet</h2>
+                <p>Create your first tutoring session to start connecting with students</p>
+                <a href="{% url 'tutoringsession:create' %}" class="btn btn-primary btn-lg">
+                    <i class="fas fa-plus"></i>
+                    <span>Create Your First Session</span>
+                </a>
+            </div>
+        {% endif %}
+
+    </div>
+</div>
+
+<script>
+document.querySelectorAll('.capacity-fill').forEach(el => {
+    const taken = parseInt(el.dataset.taken || 0);
+    const capacity = parseInt(el.dataset.capacity || 1);
+    const percent = Math.min(100, Math.max(0, (taken / capacity) * 100));
+    el.style.width = percent + "%";
+});
+</script>
+
+
+{% endblock %}

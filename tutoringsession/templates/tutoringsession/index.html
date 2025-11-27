@@ -307,7 +307,7 @@
                   <button class="btn btn-outline-nav" disabled>Full</button>
                 {% else %}
                   {% if user.is_authenticated %}
-                    <form method="post" action="{% url 'tutoringsession:request_session' s.id %}">
+                    <form method="post" action="{% url 'tutoringsession:request' s.id %}">
                       {% csrf_token %}
                       <button type="submit" class="btn btn-primary">
                         <i class="fas fa-hand-paper"></i> Request Session

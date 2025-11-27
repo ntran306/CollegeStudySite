@@ -1,0 +1,207 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="session-detail-page">
+    <div class="session-detail-container">
+        
+        <!-- Back Button -->
+        <div class="detail-back">
+            <a href="{% url 'tutoringsession:dashboard' %}" class="back-link">
+                <i class="fas fa-arrow-left"></i>
+                <span>Back to Dashboard</span>
+            </a>
+        </div>
+
+        <!-- Session Header -->
+        <div class="detail-header">
+            <div class="detail-header-content">
+                <div class="detail-badge-row">
+                    {% if session.is_remote %}
+                        <span class="detail-badge remote">
+                            <i class="fas fa-laptop"></i>
+                            Remote Session
+                        </span>
+                    {% else %}
+                        <span class="detail-badge in-person">
+                            <i class="fas fa-map-marker-alt"></i>
+                            In-Person
+                        </span>
+                    {% endif %}
+                </div>
+                <h1>{{ session.subject }}</h1>
+                <div class="detail-meta">
+                    <span class="meta-item">
+                        <i class="fas fa-calendar"></i>
+                        {{ session.date|date:"F d, Y" }}
+                    </span>
+                    {% if session.start_time %}
+                        <span class="meta-item">
+                            <i class="fas fa-clock"></i>
+                            {{ session.start_time|time:"g:i A" }} - {{ session.end_time|time:"g:i A" }}
+                        </span>
+                    {% else %}
+                        <span class="meta-item">
+                            <i class="fas fa-clock"></i>
+                            Flexible timing
+                        </span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="detail-actions">
+                <a href="{% url 'tutoringsession:edit' session.id %}" class="btn btn-primary">
+                    <i class="fas fa-edit"></i>
+                    <span>Edit Session</span>
+                </a>
+                <a href="{% url 'tutoringsession:delete' session.id %}" class="btn btn-primary btn-danger">
+                    <i class="fas fa-trash"></i>
+                    <span>Delete</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- Session Details Grid -->
+        <div class="detail-grid">
+            
+            <!-- Main Info Card -->
+            <div class="detail-card main">
+                <div class="detail-card-header">
+                    <h2>
+                        <i class="fas fa-info-circle"></i>
+                        Session Information
+                    </h2>
+                </div>
+                <div class="detail-card-body">
+                    {% if session.description %}
+                        <div class="detail-section">
+                            <h3>Description</h3>
+                            <p class="detail-description">{{ session.description }}</p>
+                        </div>
+                    {% else %}
+                        <div class="detail-section">
+                            <p class="empty-description">No description provided for this session.</p>
+                        </div>
+                    {% endif %}
+
+                    <div class="detail-info-grid">
+                        <div class="info-box">
+                            <div class="info-icon">
+                                <i class="fas fa-users"></i>
+                            </div>
+                            <div class="info-content">
+                                <span class="info-label">Capacity</span>
+                                <span class="info-value">{{ session.capacity }} students</span>
+                            </div>
+                        </div>
+
+                        <div class="info-box">
+                            <div class="info-icon enrolled">
+                                <i class="fas fa-user-check"></i>
+                            </div>
+                            <div class="info-content">
+                                <span class="info-label">Enrolled</span>
+                                <span class="info-value">{{ session.seats_taken|default:"0" }} students</span>
+                            </div>
+                        </div>
+
+                        <div class="info-box">
+                            <div class="info-icon">
+                                <i class="fas fa-chair"></i>
+                            </div>
+                            <div class="info-content">
+                                <span class="info-label">Available Seats</span>
+                                <span class="info-value">{{ session.capacity|add:session.seats_taken|default:session.capacity|add:"-"|add:session.seats_taken|default:"0" }} remaining</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="enrollment-progress">
+                        <div class="progress-header">
+                            <span>Enrollment Progress</span>
+                            <span>{% widthratio session.seats_taken|default:0 session.capacity 100 %}%</span>
+                        </div>
+                        <div class="progress-bar-container">
+                            <div class="progress-bar-fill"
+                                data-taken="{{ session.seats_taken }}"
+                                data-capacity="{{ session.capacity }}">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sidebar Info -->
+            <div class="detail-sidebar">
+                
+                <!-- Location Card -->
+                <div class="detail-card">
+                    <div class="detail-card-header">
+                        <h2>
+                            <i class="fas fa-map-marker-alt"></i>
+                            Location
+                        </h2>
+                    </div>
+                    <div class="detail-card-body">
+                        {% if session.is_remote %}
+                            <div class="location-info remote">
+                                <i class="fas fa-laptop"></i>
+                                <div>
+                                    <p class="location-type">Remote Session</p>
+                                    <p class="location-desc">Online meeting link will be provided</p>
+                                </div>
+                            </div>
+                        {% else %}
+                            <div class="location-info">
+                                <i class="fas fa-building"></i>
+                                <div>
+                                    <p class="location-type">In-Person</p>
+                                    <p class="location-address">{{ session.location|default:"Location to be determined" }}</p>
+                                </div>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Quick Stats -->
+                <div class="detail-card stats">
+                    <div class="detail-card-header">
+                        <h2>
+                            <i class="fas fa-chart-line"></i>
+                            Quick Stats
+                        </h2>
+                    </div>
+                    <div class="detail-card-body">
+                        <div class="stat-row">
+                            <span class="stat-label">Created</span>
+                            <span class="stat-value">{{ session.created_at|date:"M d, Y"|default:"Recently" }}</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">Status</span>
+                            <span class="stat-badge active">Active</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">Session Type</span>
+                            <span class="stat-value">{{ session.subject }}</span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+</div>
+
+<script>
+document.querySelectorAll('.progress-bar-fill').forEach(el => {
+    const taken = parseInt(el.dataset.taken || 0);
+    const capacity = parseInt(el.dataset.capacity || 1); // prevents divide-by-zero
+    const percent = Math.min(100, Math.max(0, (taken / capacity) * 100));
+    el.style.width = percent + "%";
+});
+</script>
+
+
+{% endblock %}

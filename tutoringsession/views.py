@@ -11,6 +11,7 @@ from django.contrib.auth.models import User
 from accounts.models import TutorProfile, StudentProfile
 import json
 from tutoringsession.utils import haversine
+from .forms import TutoringSessionForm
 
 
 REMOTE_TOKENS = {"remote", "online"}
@@ -197,4 +198,95 @@ def search_students(request):
     return render(request, "tutoringsession/search_students.html", {
         "students": qs,
         "selected": {"name": name_q, "subject": subject_q, "location": location_q}
+    })
+
+@login_required
+def create_session(request):
+    # Only tutors allowed
+    if not hasattr(request.user, "tutorprofile"):
+        messages.error(request, "You must be a tutor to create sessions.")
+        return redirect("tutoringsession:index")
+
+    if request.method == "POST":
+        form = TutoringSessionForm(request.POST)
+        if form.is_valid():
+            session = form.save(commit=False)
+            session.tutor = request.user
+            session.save()
+            messages.success(request, "Tutoring session created!")
+            return redirect("tutoringsession:index")
+        else:
+            messages.error(request, "Please fix the errors below.")
+    else:
+        form = TutoringSessionForm()
+
+    return render(request, "tutoringsession/create_session.html", {"form": form})
+
+@login_required
+def edit_session(request, session_id):
+    session = get_object_or_404(TutoringSession, id=session_id)
+
+    # Only the tutor who created it can edit
+    if session.tutor != request.user:
+        messages.error(request, "You cannot edit this session.")
+        return redirect("tutoringsession:index")
+
+    if request.method == "POST":
+        form = TutoringSessionForm(request.POST, instance=session)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Session updated!")
+            return redirect("tutoringsession:dashboard")
+        else:
+            messages.error(request, "Please correct the errors below.")
+    else:
+        form = TutoringSessionForm(instance=session)
+
+    return render(request, "tutoringsession/edit_session.html", {
+        "form": form,
+        "session": session
+    })
+
+@login_required
+def delete_session(request, session_id):
+    session = get_object_or_404(TutoringSession, id=session_id)
+
+    # Permission check
+    if session.tutor != request.user:
+        messages.error(request, "You cannot delete this session.")
+        return redirect("tutoringsession:index")
+
+    if request.method == "POST":
+        session.delete()
+        messages.success(request, "Session deleted.")
+        return redirect("tutoringsession:dashboard")
+
+    return render(request, "tutoringsession/delete_session.html", {
+        "session": session
+    })
+
+@login_required
+def tutor_dashboard(request):
+    # Only tutors can access
+    if not hasattr(request.user, "tutorprofile"):
+        messages.error(request, "You must be a tutor to access this page.")
+        return redirect("tutoringsession:index")
+
+    sessions = TutoringSession.objects.filter(tutor=request.user).order_by("date", "start_time")
+
+    return render(request, "tutoringsession/dashboard.html", {
+        "sessions": sessions
+    })
+
+@login_required
+def session_detail(request, session_id):
+    session = get_object_or_404(TutoringSession, id=session_id)
+
+    # Tutors can view their own sessions; students can view all
+    if hasattr(request.user, "tutorprofile") and session.tutor != request.user:
+        messages.error(request, "You cannot view this session.")
+        return redirect("tutoringsession:dashboard")
+
+    return render(request, "tutoringsession/detail.html", {
+        "session": session
     })
