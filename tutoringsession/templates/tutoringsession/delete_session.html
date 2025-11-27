@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="session-form-page">
+    <div class="session-form-container small">
+        
+        <div class="session-form-header danger">
+            <div class="form-header-icon danger">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <h1>Delete Session</h1>
+            <p>This action cannot be undone</p>
+        </div>
+
+        <div class="delete-confirmation">
+            <div class="confirmation-card">
+                <div class="confirmation-icon">
+                    <i class="fas fa-calendar-times"></i>
+                </div>
+                <h3>Are you sure you want to delete this session?</h3>
+                <div class="session-details">
+                    <div class="detail-item">
+                        <i class="fas fa-book"></i>
+                        <span>{{ session.subject }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <i class="fas fa-calendar"></i>
+                        <span>{{ session.date }}</span>
+                    </div>
+                    {% if session.start_time %}
+                        <div class="detail-item">
+                            <i class="fas fa-clock"></i>
+                            <span>{{ session.start_time|time:"g:i A" }} - {{ session.end_time|time:"g:i A" }}</span>
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="warning-box">
+                    <i class="fas fa-info-circle"></i>
+                    <p>Students enrolled in this session will be notified of the cancellation.</p>
+                </div>
+            </div>
+        </div>
+
+        <form method="POST" class="delete-form">
+            {% csrf_token %}
+            
+            <div class="form-actions centered">
+                <button type="submit" class="btn btn-danger btn-lg">
+                    <i class="fas fa-trash"></i>
+                    <span>Yes, Delete Session</span>
+                </button>
+                <a href="{% url 'tutoringsession:dashboard' %}" class="btn btn-secondary btn-lg">
+                    <i class="fas fa-arrow-left"></i>
+                    <span>Cancel</span>
+                </a>
+            </div>
+        </form>
+
+    </div>
+</div>
+
+{% endblock %}

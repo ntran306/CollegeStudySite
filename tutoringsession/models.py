@@ -8,7 +8,7 @@ class TutoringSession(models.Model):
     subject = models.CharField(max_length=100)
 
     # Time fields
-    date = models.DateField()
+    date = models.DateField(null=True, blank=True)
     start_time = models.TimeField(blank=True, null=True)
     end_time = models.TimeField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True, blank=True, null=True)
@@ -19,7 +19,7 @@ class TutoringSession(models.Model):
     description = models.TextField(blank=True)
 
     # Location fields
-    location = models.CharField(max_length=255, default='Remote')
+    location = models.CharField(max_length=255, blank=True)
     latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
     longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)    
 
