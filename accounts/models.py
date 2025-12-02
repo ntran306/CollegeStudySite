@@ -17,8 +17,9 @@ class StudentProfile(models.Model):
 
     # Favorite study spot - help students connect (Can also technically be set to their home)
     location = models.CharField(max_length=255, blank=True, null=True)
-    latitude  = models.FloatField(blank=True, null=True)
+    latitude = models.FloatField(blank=True, null=True)
     longitude = models.FloatField(blank=True, null=True)
+
 
     def save(self, *args, **kwargs):
         """
@@ -85,8 +86,9 @@ class TutorProfile(models.Model):
 
     # Optional for tutors to also have it since they can just set a general location
     location = models.CharField(max_length=255, blank=True, null=True)
-    latitude  = models.FloatField(blank=True, null=True)
+    latitude = models.FloatField(blank=True, null=True)
     longitude = models.FloatField(blank=True, null=True)
+
 
     def save(self, *args, **kwargs):
         """

@@ -3,6 +3,8 @@
 
 <div class="auth-page">
   <div class="auth-form-container large">
+
+    <!-- Header -->
     <div class="auth-form-header">
       <div class="auth-icon tutor">
         <i class="fas fa-user-edit"></i>
@@ -13,6 +15,12 @@
 
     <form method="POST" class="auth-form" novalidate>
       {% csrf_token %}
+
+      <!-- Hidden lat/long -->
+      {{ form.latitude }}
+      {{ form.longitude }}
+
+      <!-- Non-field errors -->
       {% if form.non_field_errors %}
         <div class="form-errors">
           {% for error in form.non_field_errors %}
@@ -24,22 +32,30 @@
         </div>
       {% endif %}
 
+      <!-- Fields -->
       {% for field in form %}
-        <div class="form-group mb-3">
-          <label for="{{ field.id_for_label }}" class="form-label">
-            {{ field.label }}
-          </label>
-          {{ field }}
-          {% if field.help_text %}
-            <small class="form-text text-muted">{{ field.help_text|safe }}</small>
-          {% endif %}
-          {% for error in field.errors %}
-            <div class="text-danger mt-1">
-              <i class="fas fa-exclamation-circle"></i>
-              <span>{{ error }}</span>
-            </div>
-          {% endfor %}
-        </div>
+        {% if field.name != "latitude" and field.name != "longitude" %}
+          <div class="form-group mb-3">
+            <label for="{{ field.id_for_label }}" class="form-label">
+              {{ field.label }}
+            </label>
+
+            {{ field }}
+
+            {% if field.help_text %}
+              <small class="form-text text-muted">{{ field.help_text|safe }}</small>
+            {% endif %}
+
+            {% if field.errors %}
+              {% for error in field.errors %}
+                <div class="text-danger mt-1">
+                  <i class="fas fa-exclamation-circle"></i>
+                  <span>{{ error }}</span>
+                </div>
+              {% endfor %}
+            {% endif %}
+          </div>
+        {% endif %}
       {% endfor %}
 
       <button type="submit" class="btn btn-primary w-100">
@@ -52,7 +68,28 @@
         <i class="fas fa-arrow-left"></i> Back to Profile
       </a>
     </div>
+
   </div>
 </div>
+
+<script>
+/*
+Autocomplete disabled until API key is added.
+
+function initAutocomplete() {
+    const input = document.getElementById("id_location");
+    if (!input) return;
+
+    const autocomplete = new google.maps.places.Autocomplete(input);
+    autocomplete.addListener("place_changed", () => {
+        const place = autocomplete.getPlace();
+        if (!place.geometry) return;
+
+        document.getElementById("id_latitude").value = place.geometry.location.lat();
+        document.getElementById("id_longitude").value = place.geometry.location.lng();
+    });
+}
+*/
+</script>
 
 {% endblock %}

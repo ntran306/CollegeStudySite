@@ -8,6 +8,17 @@ class StudentSignUpForm(UserCreationForm):
     major = forms.CharField(max_length=100, required=False)
     year = forms.CharField(max_length=20, required=False)
 
+    location = forms.CharField(
+            max_length=255,
+            required=False,
+            widget=forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Enter your city or campus'
+            })
+        )
+    latitude = forms.FloatField(required=False, widget=forms.HiddenInput())
+    longitude = forms.FloatField(required=False, widget=forms.HiddenInput())
+   
     class Meta(UserCreationForm.Meta):
         model = User
         fields = ['username', 'email', 'password1', 'password2']
@@ -19,6 +30,9 @@ class StudentSignUpForm(UserCreationForm):
                 user=user,
                 major=self.cleaned_data.get('major', ''),
                 year=self.cleaned_data.get('year', ''),
+                location=self.cleaned_data.get('location', ''),
+                latitude=self.cleaned_data.get('latitude') or None,
+                longitude=self.cleaned_data.get('longitude') or None,
             )
         return user
 
@@ -47,10 +61,15 @@ class TutorSignUpForm(UserCreationForm):
         required=False
     )
     location = forms.CharField(
-        max_length=255,
-        required=False,
-        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter your city or campus'}),
-    )
+            max_length=255,
+            required=False,
+            widget=forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Enter your city or campus'
+            })
+        )
+    latitude = forms.FloatField(required=False, widget=forms.HiddenInput())
+    longitude = forms.FloatField(required=False, widget=forms.HiddenInput())
 
     class Meta(UserCreationForm.Meta):
         model = User
@@ -67,6 +86,8 @@ class TutorSignUpForm(UserCreationForm):
                 rate=self.cleaned_data.get('rate'),
                 bio=self.cleaned_data.get('bio', ''),
                 location=self.cleaned_data.get('location', ''),
+                latitude=self.cleaned_data.get('latitude') or None,
+                longitude=self.cleaned_data.get('longitude') or None,
             )
         return user
 

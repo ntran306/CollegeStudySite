@@ -3,6 +3,7 @@
 
 <div class="auth-page">
     <div class="auth-form-container large">
+
         <div class="auth-form-header">
             <div class="auth-icon tutor">
                 <i class="fas fa-chalkboard-teacher"></i>
@@ -13,6 +14,10 @@
 
         <form method="POST" class="auth-form" novalidate>
             {% csrf_token %}
+
+            {{ form.latitude }}
+            {{ form.longitude }}
+
             {% if form.non_field_errors %}
                 <div class="form-errors">
                     {% for error in form.non_field_errors %}
@@ -24,24 +29,18 @@
                 </div>
             {% endif %}
 
+            <!-- ACCOUNT INFO -->
             <div class="form-section">
                 <h3 class="form-section-title">
-                    <i class="fas fa-user"></i>
-                    Account Information
+                    <i class="fas fa-user"></i> Account Information
                 </h3>
-                
+
+                <!-- Username -->
                 <div class="form-group">
                     <label for="{{ form.username.id_for_label }}" class="form-label">
-                        Username
-                        <span class="required">*</span>
+                        Username <span class="required">*</span>
                     </label>
                     {{ form.username }}
-                    {% if form.username.help_text %}
-                        <div class="form-help">
-                            <i class="fas fa-info-circle"></i>
-                            <span>{{ form.username.help_text|safe }}</span>
-                        </div>
-                    {% endif %}
                     {% if form.username.errors %}
                         {% for error in form.username.errors %}
                             <div class="field-error">
@@ -52,20 +51,14 @@
                     {% endif %}
                 </div>
 
+                <!-- Email -->
                 <div class="form-group">
                     <label for="{{ form.email.id_for_label }}" class="form-label">
-                        Email
-                        <span class="required">*</span>
+                        Email <span class="required">*</span>
                     </label>
                     {{ form.email }}
-                    {% if form.email.help_text %}
-                        <div class="form-help">
-                            <i class="fas fa-info-circle"></i>
-                            <span>{{ form.email.help_text|safe }}</span>
-                        </div>
-                    {% endif %}
-                    {% if form.email.errors %}
-                        {% for error in form.email.errors %}
+                    {% if form.username.errors %}
+                        {% for error in form.username.errors %}
                             <div class="field-error">
                                 <i class="fas fa-exclamation-circle"></i>
                                 <span>{{ error }}</span>
@@ -74,164 +67,157 @@
                     {% endif %}
                 </div>
 
+                <!-- Passwords -->
                 <div class="form-row">
                     <div class="form-group">
                         <label for="{{ form.password1.id_for_label }}" class="form-label">
-                            Password
-                            <span class="required">*</span>
+                            Password <span class="required">*</span>
                         </label>
                         {{ form.password1 }}
-                        {% if form.password1.help_text %}
-                            <div class="form-help">
-                                <i class="fas fa-info-circle"></i>
-                                <span>{{ form.password1.help_text|safe }}</span>
+                        {% if form.username.errors %}
+                        {% for error in form.username.errors %}
+                            <div class="field-error">
+                                <i class="fas fa-exclamation-circle"></i>
+                                <span>{{ error }}</span>
                             </div>
-                        {% endif %}
-                        {% if form.password1.errors %}
-                            {% for error in form.password1.errors %}
-                                <div class="field-error">
-                                    <i class="fas fa-exclamation-circle"></i>
-                                    <span>{{ error }}</span>
-                                </div>
-                            {% endfor %}
-                        {% endif %}
+                        {% endfor %}
+                    {% endif %}
                     </div>
 
                     <div class="form-group">
                         <label for="{{ form.password2.id_for_label }}" class="form-label">
-                            Confirm Password
-                            <span class="required">*</span>
+                            Confirm Password <span class="required">*</span>
                         </label>
                         {{ form.password2 }}
-                        {% if form.password2.errors %}
-                            {% for error in form.password2.errors %}
-                                <div class="field-error">
-                                    <i class="fas fa-exclamation-circle"></i>
-                                    <span>{{ error }}</span>
-                                </div>
-                            {% endfor %}
-                        {% endif %}
-                    </div>
-                </div>
-            </div>
-            <div class="form-section">
-              <h3 class="form-section-title">
-                <i class="fas fa-briefcase"></i>
-                Tutor Profile
-              </h3>
-
-              <div class="section-header">
-                <h2>
-                  <i class="fas fa-book-open"></i>
-                  Subjects I Teach
-                </h2>
-              </div>
-
-              <div class="form-group mb-3">
-                <label for="{{ form.subjects.id_for_label }}" class="form-label">
-                  <i class="fas fa-book-open me-1"></i> Select Subjects
-                  <span class="required">*</span>
-                </label>
-
-                {{ form.subjects }}
-
-                <small class="form-text text-muted">
-                  Hold <strong>Ctrl</strong> (Windows) or <strong>Cmd</strong> (Mac) to select multiple subjects.
-                </small>
-
-                {% if form.subjects.errors %}
-                  {% for error in form.subjects.errors %}
-                    <div class="text-danger mt-1">
-                      <i class="fas fa-exclamation-circle"></i>
-                      <span>{{ error }}</span>
-                    </div>
-                  {% endfor %}
-                {% endif %}
-              </div>
-            </div>
-            
-            <div class="form-row">
-              <div class="form-group">
-                  <label for="{{ form.rate.id_for_label }}" class="form-label">
-                      Hourly Rate ($)
-                      <span class="required">*</span>
-                     </label>
-                    {{ form.rate }}
-                    {% if form.rate.help_text %}
-                        <div class="form-help">
-                            <i class="fas fa-info-circle"></i>
-                            <span>{{ form.rate.help_text|safe }}</span>
-                        </div>
-                    {% endif %}
-                    {% if form.rate.errors %}
-                        {% for error in form.rate.errors %}
+                        {% if form.username.errors %}
+                        {% for error in form.username.errors %}
                             <div class="field-error">
                                 <i class="fas fa-exclamation-circle"></i>
                                 <span>{{ error }}</span>
                             </div>
                         {% endfor %}
-                      {% endif %}
-                </div>
-
-                <div class="form-group">
-                     <label for="{{ form.location.id_for_label }}" class="form-label">
-                        Location
-                        <span class="required">*</span>
-                    </label>
-                    {{ form.location }}
-                      {% if form.location.help_text %}
-                        <div class="form-help">
-                            <i class="fas fa-info-circle"></i>
-                            <span>{{ form.location.help_text|safe }}</span>
-                        </div>
                     {% endif %}
-                        {% if form.location.errors %}
-                         {% for error in form.location.errors %}
+                    </div>
+                </div>
+            </div>
+
+
+            <!-- TUTOR PROFILE -->
+            <div class="form-section">
+                <h3 class="form-section-title">
+                    <i class="fas fa-briefcase"></i> Tutor Profile
+                </h3>
+
+                <!-- Subjects -->
+                <div class="form-group">
+                    <label for="{{ form.subjects.id_for_label }}" class="form-label">
+                        <i class="fas fa-book-open"></i> Subjects I Teach <span class="required">*</span>
+                    </label>
+                    {{ form.subjects }}
+                    <small class="form-text text-muted">
+                        Hold <strong>Ctrl</strong> or <strong>Cmd</strong> to select multiple.
+                    </small>
+                    {% if form.username.errors %}
+                        {% for error in form.username.errors %}
                             <div class="field-error">
                                 <i class="fas fa-exclamation-circle"></i>
                                 <span>{{ error }}</span>
                             </div>
-                        {% endfor %}                      
-                      {% endif %}
+                        {% endfor %}
+                    {% endif %}
                 </div>
-            </div>
 
-            <div class="form-group">
-                <label for="{{ form.bio.id_for_label }}" class="form-label">
-                    Bio
-                     <span class="required">*</span>
-                </label>
-                {{ form.bio }}
-                {% if form.bio.help_text %}
-                    <div class="form-help">                          
-                      <i class="fas fa-info-circle"></i>
-                        <span>{{ form.bio.help_text|safe }}</span>
+                <!-- Rate + Location -->
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="{{ form.rate.id_for_label }}" class="form-label">
+                            Hourly Rate ($) <span class="required">*</span>
+                        </label>
+                        {{ form.rate }}
+                        {% if form.username.errors %}
+                        {% for error in form.username.errors %}
+                            <div class="field-error">
+                                <i class="fas fa-exclamation-circle"></i>
+                                <span>{{ error }}</span>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
                     </div>
-                {% endif %}
-                {% if form.bio.errors %}
-                    {% for error in form.bio.errors %}
-                        <div class="field-error">
-                             <i class="fas fa-exclamation-circle"></i>
-                            <span>{{ error }}</span>
-                        </div>
-                    {% endfor %}
-                {% endif %}
-            </div>
-            <button type="submit" class="btn btn-primary btn-form">
-                    <i class="fas fa-user-plus"></i>
-                    <span>Create Tutor Account</span>
-                </button>
 
-                <div class="auth-footer">
-                    <p>Already have an account? <a href="{% url 'accounts:login' %}">Log in</a></p>
+                    <div class="form-group">
+                        <label for="{{ form.location.id_for_label }}" class="form-label">
+                            Location <span class="required">*</span>
+                        </label>
+                        {{ form.location }}
+                        {% if form.username.errors %}
+                        {% for error in form.username.errors %}
+                            <div class="field-error">
+                                <i class="fas fa-exclamation-circle"></i>
+                                <span>{{ error }}</span>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                    </div>
                 </div>
 
-                <div class="auth-alternative">
-                    <p>Looking to find a tutor? <a href="{% url 'accounts:signup_student' %}">Sign up as student</a></p>
-                </div>    
-          </div>
+                <!-- Bio -->
+                <div class="form-group">
+                    <label for="{{ form.bio.id_for_label }}" class="form-label">
+                        Bio <span class="required">*</span>
+                    </label>
+                    {{ form.bio }}
+                    {% if form.username.errors %}
+                        {% for error in form.username.errors %}
+                            <div class="field-error">
+                                <i class="fas fa-exclamation-circle"></i>
+                                <span>{{ error }}</span>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-form">
+                <i class="fas fa-user-plus"></i>
+                <span>Create Tutor Account</span>
+            </button>
+
+            <div class="auth-footer">
+                <p>Already have an account?
+                    <a href="{% url 'accounts:login' %}">Log in</a>
+                </p>
+            </div>
+
+            <div class="auth-alternative">
+                <p>Looking to find a tutor?
+                    <a href="{% url 'accounts:signup_student' %}">Sign up as student</a>
+                </p>
+            </div>
         </form>
     </div>
 </div>
 
+<!-- Google Autocomplete -->
+<script>
+/*
+function initAutocomplete() {
+    const input = document.getElementById("id_location");
+    if (!input) return;
+
+    const autocomplete = new google.maps.places.Autocomplete(input);
+
+    autocomplete.addListener("place_changed", () => {
+        const place = autocomplete.getPlace();
+        if (!place.geometry) return;
+
+        document.getElementById("id_latitude").value = place.geometry.location.lat();
+        document.getElementById("id_longitude").value = place.geometry.location.lng();
+    });
+}
+
+
+NEED API KEY
+
+*/ 
+</script>
 {% endblock %}
