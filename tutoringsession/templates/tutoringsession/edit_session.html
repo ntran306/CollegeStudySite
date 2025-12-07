@@ -10,11 +10,13 @@
                 <i class="fas fa-edit"></i>
             </div>
             <h1>Edit Session</h1>
-            <p>Update your tutoring session: <strong>{{ session.subject }}</strong></p>
+            <p>Update your tutoring session: <strong>{{ session.subject.name }}</strong></p>
         </div>
 
         <form method="POST" class="session-form">
             {% csrf_token %}
+            
+            {{ form.subject }}
             
             {% if form.non_field_errors %}
                 <div class="form-errors">
@@ -34,30 +36,62 @@
                         Session Details
                     </h3>
 
-                    {% for field in form %}
-                        <div class="form-group">
-                            <label for="{{ field.id_for_label }}" class="form-label">
-                                {{ field.label }}
-                                {% if field.field.required %}
-                                    <span class="required">*</span>
-                                {% endif %}
-                            </label>
-                            {{ field }}
-                            {% if field.help_text %}
-                                <div class="form-help">
-                                    <i class="fas fa-info-circle"></i>
-                                    <span>{{ field.help_text|safe }}</span>
-                                </div>
-                            {% endif %}
-                            {% if field.errors %}
-                                {% for error in field.errors %}
-                                    <div class="field-error">
-                                        <i class="fas fa-exclamation-circle"></i>
-                                        <span>{{ error }}</span>
-                                    </div>
-                                {% endfor %}
-                            {% endif %}
+                    <!-- ✅ Class Selector (NO ADD BUTTON - read-only selection) -->
+                    <div class="form-group">
+                        <label for="classSearch" class="form-label">
+                            Class <span class="required">*</span>
+                        </label>
+                        <div style="position: relative;">
+                            <input type="text" id="classSearch"
+                                   placeholder="Search for a class..."
+                                   autocomplete="off"
+                                   style="width: 100%; padding: 0.75rem 2.5rem 0.75rem 1rem; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 1rem;">
+                            <i class="fas fa-search" style="position: absolute; right: 1rem; top: 50%; transform: translateY(-50%); color: #9ca3af;"></i>
                         </div>
+
+                        <div id="classDropdown"
+                             style="display: none; max-height: 200px; overflow-y: auto; border: 2px solid #e2e8f0;
+                                    border-radius: 8px; background: white; margin-top: 0.5rem;"></div>
+
+                        <div id="selectedClass"
+                             style="margin-top: 0.75rem; min-height: 40px; padding: 0.5rem; background: #f7fafc; border: 2px solid #e2e8f0; border-radius: 8px;"></div>
+
+                        {% if form.subject.errors %}
+                            {% for error in form.subject.errors %}
+                                <div class="field-error">
+                                    <i class="fas fa-exclamation-circle"></i>
+                                    <span>{{ error }}</span>
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+
+                    {% for field in form %}
+                        {% if field.name != "subject" %}
+                            <div class="form-group">
+                                <label for="{{ field.id_for_label }}" class="form-label">
+                                    {{ field.label }}
+                                    {% if field.field.required %}
+                                        <span class="required">*</span>
+                                    {% endif %}
+                                </label>
+                                {{ field }}
+                                {% if field.help_text %}
+                                    <div class="form-help">
+                                        <i class="fas fa-info-circle"></i>
+                                        <span>{{ field.help_text|safe }}</span>
+                                    </div>
+                                {% endif %}
+                                {% if field.errors %}
+                                    {% for error in field.errors %}
+                                        <div class="field-error">
+                                            <i class="fas fa-exclamation-circle"></i>
+                                            <span>{{ error }}</span>
+                                        </div>
+                                    {% endfor %}
+                                {% endif %}
+                            </div>
+                        {% endif %}
                     {% endfor %}
                 </div>
             </div>
@@ -76,5 +110,93 @@
 
     </div>
 </div>
+
+<!-- ✅ Safe JSON Embeds -->
+{{ classes|json_script:"available-classes" }}
+{{ current_class|json_script:"current-class" }}
+
+<script>
+const availableClasses = JSON.parse(document.getElementById('available-classes').textContent);
+const currentClassData = JSON.parse(document.getElementById('current-class').textContent);
+
+const search = document.getElementById('classSearch');
+const dropdown = document.getElementById('classDropdown');
+const selectedDiv = document.getElementById('selectedClass');
+const input = document.getElementById('id_subject');
+
+// ✅ Initialize with current class
+let selectedClass = currentClassData;
+
+function updateInput() {
+    input.value = selectedClass ? selectedClass.id : '';
+}
+
+function render() {
+    if (!selectedClass) {
+        selectedDiv.innerHTML = '<span style="color: #9ca3af;">No class selected</span>';
+        input.value = '';
+        return;
+    }
+    selectedDiv.innerHTML = `
+        <span class="skill-tag" style="display:inline-flex;align-items:center;gap:0.5rem;background:#e0f2fe;color:#0369a1;padding:0.5rem 0.75rem;border-radius:6px;font-size:0.875rem;">
+            ${selectedClass.name}
+            <button type="button" onclick="clearClass()"
+                    style="background:none;border:none;color:#0369a1;font-weight:bold;cursor:pointer;font-size:1.25rem;line-height:1;">×</button>
+        </span>
+    `;
+    updateInput();
+}
+
+window.clearClass = () => {
+    selectedClass = null;
+    render();
+};
+
+function selectClass(id, name) {
+    selectedClass = { id, name };
+    render();
+    search.value = '';
+    dropdown.style.display = 'none';
+}
+
+search.addEventListener('input', e => {
+    const text = e.target.value.toLowerCase();
+    const filtered = availableClasses.filter(cls =>
+        cls.name.toLowerCase().includes(text)
+    );
+    dropdown.innerHTML = filtered.map(cls =>
+        `<div class="class-option" data-id="${cls.id}" data-name="${cls.name}"
+              style="padding: 0.75rem 1rem; cursor: pointer; border-bottom: 1px solid #e5e7eb;">
+            ${cls.name}
+        </div>`
+    ).join('');
+    dropdown.style.display = filtered.length ? 'block' : 'none';
+});
+
+dropdown.addEventListener('click', e => {
+    if (e.target.classList.contains('class-option')) {
+        selectClass(parseInt(e.target.dataset.id), e.target.dataset.name);
+    }
+});
+
+document.addEventListener('click', e => {
+    if (!search.contains(e.target) && !dropdown.contains(e.target)) {
+        dropdown.style.display = 'none';
+    }
+});
+
+// ✅ Initialize with current class
+render();
+updateInput();
+</script>
+
+<style>
+.class-option:hover {
+    background: #f3f4f6;
+}
+.class-option:last-child {
+    border-bottom: none;
+}
+</style>
 
 {% endblock %}
