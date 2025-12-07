@@ -13,6 +13,7 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect, get_object_or_404
 from .forms import TutorProfileForm, StudentProfileForm, TutorSignUpForm, StudentSignUpForm
 from tutoringsession.utils import haversine, batch_road_distance_and_time
+from classes.models import Class
 
 
 # ------------------------------------
@@ -30,11 +31,17 @@ def signup_student(request):
         if form.is_valid():
             user = form.save()
             login(request, user)
-            messages.success(request, "Student account created successfully!")
-            return redirect('accounts:profile')
+            messages.success(request, 'Student account created successfully!')
+            return redirect('home:index')
     else:
         form = StudentSignUpForm()
-    return render(request, 'accounts/signup_student.html', {'form': form})
+    
+    # ✅ Pass classes to template
+    classes = list(Class.objects.values('id', 'name'))
+    return render(request, 'accounts/signup_student.html', {
+        'form': form,
+        'classes': classes,
+    })
 
 # ------------------------------------
 # Tutor Sign-Up
@@ -117,32 +124,41 @@ def _get_user_profile(u):
 # ------------------------------------
 @login_required
 def edit_profile_view(request):
-    tutor_profile = getattr(request.user, 'tutorprofile', None)
-    student_profile = getattr(request.user, 'studentprofile', None)
-
-    if tutor_profile:
-        profile = tutor_profile
-        form_class = TutorProfileForm
-        profile_type = "Tutor"
-    elif student_profile:
-        profile = student_profile
+    # Determine profile type
+    if hasattr(request.user, 'studentprofile'):
+        profile = request.user.studentprofile
         form_class = StudentProfileForm
-        profile_type = "Student"
+        profile_type = 'Student'
+    elif hasattr(request.user, 'tutorprofile'):
+        profile = request.user.tutorprofile
+        form_class = TutorProfileForm
+        profile_type = 'Tutor'
     else:
-        return redirect('accounts:signup_choice')
-
+        messages.error(request, 'No profile found.')
+        return redirect('accounts:profile')
+    
     if request.method == 'POST':
         form = form_class(request.POST, request.FILES, instance=profile)
         if form.is_valid():
             form.save()
+            messages.success(request, 'Profile updated successfully!')
             return redirect('accounts:profile')
     else:
         form = form_class(instance=profile)
-
-    return render(request, 'accounts/edit_profile.html', {
+    
+    context = {
         'form': form,
         'profile_type': profile_type,
-    })
+    }
+    
+    # ✅ Add classes data for student profiles
+    if profile_type == 'Student':
+        classes = list(Class.objects.values('id', 'name'))
+        current_classes = list(profile.classes.values('id', 'name'))
+        context['classes'] = classes
+        context['current_classes'] = current_classes
+    
+    return render(request, 'accounts/edit_profile.html', context)
 # ------------------------------------
 # Connections Page & View
 # ------------------------------------

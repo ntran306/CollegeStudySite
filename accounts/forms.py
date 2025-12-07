@@ -2,11 +2,15 @@ from django import forms
 from django.contrib.auth.models import User
 from django.contrib.auth.forms import UserCreationForm
 from .models import StudentProfile, TutorProfile
+from classes.models import Class
 
 
 class StudentSignUpForm(UserCreationForm):
     major = forms.CharField(max_length=100, required=False)
     year = forms.CharField(max_length=20, required=False)
+    
+    # ✅ Add classes field (hidden, will be populated by JS)
+    classes = forms.CharField(required=False, widget=forms.HiddenInput())
 
     location = forms.CharField(
             max_length=255,
@@ -26,7 +30,7 @@ class StudentSignUpForm(UserCreationForm):
     def save(self, commit=True):
         user = super().save(commit=commit)
         if commit:
-            StudentProfile.objects.create(
+            profile = StudentProfile.objects.create(
                 user=user,
                 major=self.cleaned_data.get('major', ''),
                 year=self.cleaned_data.get('year', ''),
@@ -34,6 +38,12 @@ class StudentSignUpForm(UserCreationForm):
                 latitude=self.cleaned_data.get('latitude') or None,
                 longitude=self.cleaned_data.get('longitude') or None,
             )
+            
+            # ✅ Handle classes from hidden input
+            class_ids = self.cleaned_data.get('classes', '').split(',')
+            valid_classes = Class.objects.filter(id__in=[c for c in class_ids if c.isdigit()])
+            profile.classes.set(valid_classes)
+            
         return user
 
 
@@ -136,6 +146,9 @@ class TutorProfileForm(forms.ModelForm):
 
 
 class StudentProfileForm(forms.ModelForm):
+    # ✅ Add classes field
+    classes = forms.CharField(required=False, widget=forms.HiddenInput())
+    
     class Meta:
         model = StudentProfile
         fields = [
@@ -151,3 +164,15 @@ class StudentProfileForm(forms.ModelForm):
             'latitude': forms.HiddenInput(),
             'longitude': forms.HiddenInput(),
         }
+    
+    def save(self, commit=True):
+        profile = super().save(commit=False)
+        if commit:
+            profile.save()
+            
+            # ✅ Handle classes from hidden input
+            class_ids = self.cleaned_data.get('classes', '').split(',')
+            valid_classes = Class.objects.filter(id__in=[c for c in class_ids if c.isdigit()])
+            profile.classes.set(valid_classes)
+            
+        return profile

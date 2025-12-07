@@ -8,6 +8,7 @@ urlpatterns = [
     path('', include('home.urls')),            #homepage
     path('accounts/', include('accounts.urls')), #user accounts
     path('tutoringsession/', include('tutoringsession.urls')), #tutoring sessions
+    path('classes/', include('classes.urls')),
     #path('classes/', include('classes.urls')),   #classes
     #path('communication/', include('communication.urls')), #messaging system
 ]

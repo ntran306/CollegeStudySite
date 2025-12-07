@@ -16,6 +16,7 @@
 
             {{ form.latitude }}
             {{ form.longitude }}
+            {{ form.classes }}
 
             {% if form.non_field_errors %}
                 <div class="form-errors">
@@ -107,6 +108,36 @@
                 {{ form.year }}
             </div>
 
+            <!-- ✅ Classes Selector -->
+            <div class="form-group">
+                <label for="classSearch" class="form-label">
+                    Classes
+                </label>
+                <div style="display: flex; gap: 0.5rem; margin-bottom: 0.5rem;">
+                    <div style="flex: 1; position: relative;">
+                        <input type="text" id="classSearch"
+                               placeholder="Search for classes..."
+                               autocomplete="off"
+                               style="width: 100%; padding: 0.75rem 2.5rem 0.75rem 1rem; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 1rem;">
+                        <i class="fas fa-search" style="position: absolute; right: 1rem; top: 50%; transform: translateY(-50%); color: #9ca3af;"></i>
+                    </div>
+                    <button type="button" id="addClassBtn" class="btn btn-secondary" style="white-space: nowrap;">
+                        <i class="fas fa-plus"></i>
+                        Add
+                    </button>
+                </div>
+
+                <div id="classDropdown"
+                     style="display: none; max-height: 200px; overflow-y: auto; border: 2px solid #e2e8f0;
+                            border-radius: 8px; background: white; margin-bottom: 0.5rem;"></div>
+
+                <div id="selectedClasses"
+                     style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.75rem;
+                            min-height: 40px; padding: 0.5rem; background: #f7fafc; border: 2px solid #e2e8f0; border-radius: 8px;"></div>
+
+                <small style="color: #6b7280; font-size: 0.875rem;">Search and click to add your classes. Click + to add custom ones.</small>
+            </div>
+
             <button type="submit" class="btn btn-primary btn-form">
                 <i class="fas fa-user-plus"></i>
                 <span>Create Student Account</span>
@@ -125,25 +156,118 @@
     </div>
 </div>
 
+<!-- ✅ Safe JSON Embed -->
+{{ classes|json_script:"available-classes" }}
+
 <script>
-/*
-function initAutocomplete() {
-    const input = document.getElementById("id_location");
-    if (!input) return;
+const availableClasses = JSON.parse(document.getElementById('available-classes').textContent);
 
-    const autocomplete = new google.maps.places.Autocomplete(input);
+const search = document.getElementById('classSearch');
+const dropdown = document.getElementById('classDropdown');
+const selectedDiv = document.getElementById('selectedClasses');
+const input = document.getElementById('id_classes');
+const addBtn = document.getElementById('addClassBtn');
 
-    autocomplete.addListener("place_changed", () => {
-        const place = autocomplete.getPlace();
-        if (!place.geometry) return;
+let selected = [];
 
-        document.getElementById("id_latitude").value = place.geometry.location.lat();
-        document.getElementById("id_longitude").value = place.geometry.location.lng();
-    });
+function updateInput() {
+    input.value = selected.map(c => c.id).join(',');
 }
 
-NEED API KEY
+function render() {
+    if (!selected.length) {
+        selectedDiv.innerHTML = '<span style="color: #9ca3af;">No classes selected</span>';
+        input.value = '';
+        return;
+    }
+    selectedDiv.innerHTML = selected.map(c =>
+        `<span class="skill-tag" style="display:inline-flex;align-items:center;gap:0.5rem;background:#e0f2fe;color:#0369a1;padding:0.5rem 0.75rem;border-radius:6px;font-size:0.875rem;">
+            ${c.name}
+            <button type="button" onclick="removeClass(${c.id})"
+                    style="background:none;border:none;color:#0369a1;font-weight:bold;cursor:pointer;font-size:1.25rem;line-height:1;">×</button>
+        </span>`
+    ).join('');
+    updateInput();
+}
 
-*/
+window.removeClass = id => {
+    selected = selected.filter(c => c.id !== id);
+    render();
+};
+
+function addClass(id, name) {
+    if (!selected.find(c => c.id === id)) {
+        selected.push({ id, name });
+        render();
+    }
+    search.value = '';
+    dropdown.style.display = 'none';
+}
+
+search.addEventListener('input', e => {
+    const text = e.target.value.toLowerCase();
+    const filtered = availableClasses.filter(cls =>
+        cls.name.toLowerCase().includes(text) && !selected.find(c => c.id === cls.id)
+    );
+    dropdown.innerHTML = filtered.map(cls =>
+        `<div class="class-option" data-id="${cls.id}" data-name="${cls.name}"
+              style="padding: 0.75rem 1rem; cursor: pointer; border-bottom: 1px solid #e5e7eb;">
+            ${cls.name}
+        </div>`
+    ).join('');
+    dropdown.style.display = filtered.length ? 'block' : 'none';
+});
+
+dropdown.addEventListener('click', e => {
+    if (e.target.classList.contains('class-option')) {
+        addClass(parseInt(e.target.dataset.id), e.target.dataset.name);
+    }
+});
+
+addBtn.addEventListener('click', async () => {
+    const className = search.value.trim();
+    if (!className) return alert('Enter a class name first');
+
+    const existing = availableClasses.find(c => c.name.toLowerCase() === className.toLowerCase());
+    if (existing) return addClass(existing.id, existing.name);
+
+    const csrf = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    try {
+        const res = await fetch('/classes/api/create/', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrf},
+            body: JSON.stringify({ name: className })
+        });
+        if (res.ok) {
+            const data = await res.json();
+            availableClasses.push({ id: data.id, name: data.name });
+            addClass(data.id, data.name);
+        } else {
+            alert('Failed to add class.');
+        }
+    } catch (err) {
+        console.error('Error adding class:', err);
+        alert('Error adding class. Please try again.');
+    }
+});
+
+document.addEventListener('click', e => {
+    if (!search.contains(e.target) && !dropdown.contains(e.target)) {
+        dropdown.style.display = 'none';
+    }
+});
+
+render();
+updateInput();
 </script>
+
+<style>
+.class-option:hover {
+    background: #f3f4f6;
+}
+.class-option:last-child {
+    border-bottom: none;
+}
+</style>
+
 {% endblock %}

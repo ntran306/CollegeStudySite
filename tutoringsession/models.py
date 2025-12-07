@@ -1,11 +1,14 @@
 from django.db import models
 from django.contrib.auth.models import User
 from .utils import geocode_address
+from classes.models import Class  # ✅ Add this import
 
 class TutoringSession(models.Model):
     # Main fields
     tutor = models.ForeignKey(User, on_delete=models.CASCADE, related_name='tutor_sessions')
-    subject = models.CharField(max_length=100)
+    
+    # ✅ Change subject from CharField to ForeignKey
+    subject = models.ForeignKey(Class, on_delete=models.CASCADE, related_name='sessions')
 
     # Time fields
     date = models.DateField(null=True, blank=True)
@@ -27,7 +30,7 @@ class TutoringSession(models.Model):
         ordering = ['-date', 'start_time']
     
     def __str__(self):
-        return f"{self.subject} - {self.date} ({self.tutor.username})"
+        return f"{self.subject.name} - {self.date} ({self.tutor.username})"
     
     def seats_taken(self):
         return self.requests.filter(status="approved").count()
