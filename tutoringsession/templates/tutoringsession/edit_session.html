@@ -16,7 +16,7 @@
         <form method="POST" class="session-form">
             {% csrf_token %}
             
-            {{ form.subject }}
+            <input type="hidden" name="subject" id="id_subject" value="">
             
             {% if form.non_field_errors %}
                 <div class="form-errors">

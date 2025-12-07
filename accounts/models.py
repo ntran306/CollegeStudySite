@@ -69,19 +69,10 @@ class StudentProfile(models.Model):
 
 
 class TutorProfile(models.Model):
-    SUBJECT_CHOICES = [
-        ('math', 'Mathematics'),
-        ('science', 'Science'),
-        ('english', 'English'),
-        ('history', 'History'),
-        ('computer_science', 'Computer Science'),
-        ('engineering', 'Engineering'),
-        ('economics', 'Economics'),
-        ('psychology', 'Psychology'),
-    ]
-
+    
+    classes = models.ManyToManyField(Class, blank=True, related_name='tutors')
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    subjects = models.TextField(blank=True, null=True)
+    subjects = models.TextField(blank=True, null=True) #mark for future
     rate = models.DecimalField(max_digits=6, decimal_places=2, blank=True, null=True)
     bio = models.TextField(blank=True, null=True)
     school = models.CharField(max_length=120, blank=True, null=True)

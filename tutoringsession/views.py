@@ -205,24 +205,37 @@ def search_students(request):
 def create_session(request):
     if request.method == 'POST':
         form = TutoringSessionForm(request.POST)
+        
+        # ✅ Get and validate class selection
+        class_id = request.POST.get('subject', '').strip()
+        
+        if not class_id or not class_id.isdigit():
+            messages.error(request, 'Please select a class.')
+            classes = list(Class.objects.values('id', 'name'))
+            return render(request, 'tutoringsession/create_session.html', {
+                'form': form,
+                'classes': classes,
+            })
+        
+        try:
+            selected_class = Class.objects.get(id=int(class_id))
+        except Class.DoesNotExist:
+            messages.error(request, 'Invalid class selected.')
+            classes = list(Class.objects.values('id', 'name'))
+            return render(request, 'tutoringsession/create_session.html', {
+                'form': form,
+                'classes': classes,
+            })
+        
         if form.is_valid():
             session = form.save(commit=False)
             session.tutor = request.user
-            
-            # ✅ Handle class from hidden input
-            class_id = request.POST.get('subject', '')
-            if class_id.isdigit():
-                try:
-                    session.subject = Class.objects.get(id=int(class_id))
-                    session.save()
-                    messages.success(request, 'Session created successfully!')
-                    return redirect('tutoringsession:dashboard')
-                except Class.DoesNotExist:
-                    messages.error(request, 'Invalid class selected.')
-                    form.add_error('subject', 'Invalid class selected.')
-            else:
-                messages.error(request, 'Please select a class.')
-                form.add_error('subject', 'Please select a class.')
+            session.subject = selected_class  # ✅ Assign the Class object
+            session.save()
+            messages.success(request, 'Session created successfully!')
+            return redirect('tutoringsession:dashboard')
+        else:
+            messages.error(request, 'Please correct the errors below.')
     else:
         form = TutoringSessionForm()
     
@@ -232,34 +245,52 @@ def create_session(request):
         'classes': classes,
     })
 
-# Update your edit_session view
+
 @login_required
 def edit_session(request, session_id):
     session = get_object_or_404(TutoringSession, id=session_id, tutor=request.user)
     
     if request.method == 'POST':
         form = TutoringSessionForm(request.POST, instance=session)
+        
+        # ✅ Get and validate class selection
+        class_id = request.POST.get('subject', '').strip()
+        
+        if not class_id or not class_id.isdigit():
+            messages.error(request, 'Please select a class.')
+            classes = list(Class.objects.values('id', 'name'))
+            current_class = {'id': session.subject.id, 'name': session.subject.name}
+            return render(request, 'tutoringsession/edit_session.html', {
+                'form': form,
+                'session': session,
+                'classes': classes,
+                'current_class': current_class,
+            })
+        
+        try:
+            selected_class = Class.objects.get(id=int(class_id))
+        except Class.DoesNotExist:
+            messages.error(request, 'Invalid class selected.')
+            classes = list(Class.objects.values('id', 'name'))
+            current_class = {'id': session.subject.id, 'name': session.subject.name}
+            return render(request, 'tutoringsession/edit_session.html', {
+                'form': form,
+                'session': session,
+                'classes': classes,
+                'current_class': current_class,
+            })
+        
         if form.is_valid():
             session = form.save(commit=False)
-            
-            # ✅ Handle class from hidden input
-            class_id = request.POST.get('subject', '')
-            if class_id.isdigit():
-                try:
-                    session.subject = Class.objects.get(id=int(class_id))
-                    session.save()
-                    messages.success(request, 'Session updated successfully!')
-                    return redirect('tutoringsession:dashboard')
-                except Class.DoesNotExist:
-                    messages.error(request, 'Invalid class selected.')
-                    form.add_error('subject', 'Invalid class selected.')
-            else:
-                messages.error(request, 'Please select a class.')
-                form.add_error('subject', 'Please select a class.')
+            session.subject = selected_class  # ✅ Assign the Class object
+            session.save()
+            messages.success(request, 'Session updated successfully!')
+            return redirect('tutoringsession:dashboard')
+        else:
+            messages.error(request, 'Please correct the errors below.')
     else:
         form = TutoringSessionForm(instance=session)
     
-    # ✅ Pass classes data
     classes = list(Class.objects.values('id', 'name'))
     current_class = {'id': session.subject.id, 'name': session.subject.name}
     

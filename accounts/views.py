@@ -52,11 +52,16 @@ def signup_tutor(request):
         if form.is_valid():
             user = form.save()
             login(request, user)
-            messages.success(request, "Tutor account created successfully!")
-            return redirect('accounts:profile')
+            messages.success(request, 'Tutor account created successfully!')
+            return redirect('home:index')
     else:
         form = TutorSignUpForm()
-    return render(request, 'accounts/signup_tutor.html', {'form': form})
+    
+    classes = list(Class.objects.values('id', 'name'))
+    return render(request, 'accounts/signup_tutor.html', {
+        'form': form,
+        'classes': classes,
+    })
 
 # ------------------------------------
 # Login & Logout
@@ -145,14 +150,20 @@ def edit_profile_view(request):
         'profile_type': profile_type,
     }
     
-    # ✅ Add classes data for student profiles
+    # ✅ Add classes data for both student AND tutor profiles
+    classes = list(Class.objects.values('id', 'name'))
+    
     if profile_type == 'Student':
-        classes = list(Class.objects.values('id', 'name'))
+        current_classes = list(profile.classes.values('id', 'name'))
+        context['classes'] = classes
+        context['current_classes'] = current_classes
+    elif profile_type == 'Tutor':
         current_classes = list(profile.classes.values('id', 'name'))
         context['classes'] = classes
         context['current_classes'] = current_classes
     
     return render(request, 'accounts/edit_profile.html', context)
+
 # ------------------------------------
 # Connections Page & View
 # ------------------------------------

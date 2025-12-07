@@ -146,6 +146,30 @@
                         </div>
                     </div>
 
+                    <!-- ✅ Classes I Am Taking Section for Students -->
+                    <div class="profile-section">
+                      <div class="section-header">
+                        <h2>
+                          <i class="fas fa-book-open"></i>
+                          Classes I Am Taking
+                        </h2>
+                      </div>
+                      <div class="section-content">
+                        {% if student_profile.classes.all %}
+                          <div class="subjects-tags">
+                            {% for class in student_profile.classes.all %}
+                              <span class="subject-tag">
+                                <i class="fas fa-check-circle"></i>
+                                {{ class.name }}
+                              </span>
+                            {% endfor %}
+                          </div>
+                        {% else %}
+                          <p class="empty-state">No classes added yet.</p>
+                        {% endif %}
+                      </div>
+                    </div>
+
                     {% if student_profile.bio %}
                     <div class="profile-section">
                         <div class="section-header">
@@ -291,25 +315,26 @@
                         </div>
                     </div>
 
+                    <!-- ✅ Updated Classes I Teach Section for Tutors -->
                     <div class="profile-section">
                       <div class="section-header">
                         <h2>
                           <i class="fas fa-book-open"></i>
-                          Subjects I Teach
+                          Classes I Teach
                         </h2>
                       </div>
                       <div class="section-content">
-                        {% if tutor_profile and tutor_profile.subjects %}
+                        {% if tutor_profile.classes.all %}
                           <div class="subjects-tags">
-                            {% for subject in tutor_profile.get_subjects_list %}
+                            {% for class in tutor_profile.classes.all %}
                               <span class="subject-tag">
                                 <i class="fas fa-check-circle"></i>
-                                {{ subject }}
+                                {{ class.name }}
                               </span>
                             {% endfor %}
                           </div>
                         {% else %}
-                          <p class="empty-state">No subjects added yet.</p>
+                          <p class="empty-state">No classes added yet.</p>
                         {% endif %}
                       </div>
                     </div>
@@ -419,29 +444,5 @@
 
     </div>
 </div>
-
-<script>
-/*
-function initAutocomplete() {
-    const input = document.getElementById("id_location");
-    const autocomplete = new google.maps.places.Autocomplete(input);
-
-    autocomplete.addListener("place_changed", () => {
-        const place = autocomplete.getPlace();
-        if (!place.geometry) return;
-
-        document.getElementById("id_latitude").value = place.geometry.location.lat();
-        document.getElementById("id_longitude").value = place.geometry.location.lng();
-    });
-}
-
-NEED API KEY
-
-*/
-</script>
-
-<script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&libraries=places&callback=initAutocomplete"
-        async defer></script>
-
 
 {% endblock %}

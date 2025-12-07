@@ -20,7 +20,8 @@
       {{ form.latitude }}
       {{ form.longitude }}
       
-      {% if profile_type == "Student" %}
+      <!-- ✅ Hidden classes input for both Students and Tutors -->
+      {% if profile_type == "Student" or profile_type == "Tutor" %}
         {{ form.classes }}
       {% endif %}
 
@@ -62,11 +63,11 @@
         {% endif %}
       {% endfor %}
 
-      <!-- ✅ Classes Selector (Only for Students) -->
-      {% if profile_type == "Student" %}
+      <!-- ✅ Classes Selector (For Both Students and Tutors) -->
+      {% if profile_type == "Student" or profile_type == "Tutor" %}
         <div class="form-group mb-3">
           <label for="classSearch" class="form-label">
-            Classes
+            {% if profile_type == "Student" %}Classes{% else %}Classes I Teach{% endif %}
           </label>
           <div style="display: flex; gap: 0.5rem; margin-bottom: 0.5rem;">
             <div style="flex: 1; position: relative;">
@@ -108,7 +109,7 @@
   </div>
 </div>
 
-{% if profile_type == "Student" %}
+{% if profile_type == "Student" or profile_type == "Tutor" %}
   <!-- ✅ Safe JSON Embeds -->
   {{ classes|json_script:"available-classes" }}
   {{ current_classes|json_script:"current-classes" }}

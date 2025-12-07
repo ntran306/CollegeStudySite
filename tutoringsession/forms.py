@@ -3,16 +3,10 @@ from .models import TutoringSession
 from classes.models import Class
 
 class TutoringSessionForm(forms.ModelForm):
-    subject = forms.CharField(
-        required=True,
-        widget=forms.HiddenInput(),
-        help_text="Select the class for this tutoring session"
-    )
-    
     class Meta:
         model = TutoringSession
         fields = [
-            "subject",
+            # ✅ Remove "subject" from here - we'll handle it in the view
             "description",
             "date",
             "start_time",
