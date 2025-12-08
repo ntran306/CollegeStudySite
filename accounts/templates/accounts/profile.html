@@ -7,9 +7,9 @@
         <!-- Back Button (when viewing other profiles) -->
         {% if not is_own_profile %}
         <div style="margin-bottom: 1.5rem;">
-            <a href="{% url 'accounts:profile' %}" class="btn btn-outline">
+            <a href="{{ back_url }}" class="btn btn-outline">
                 <i class="fas fa-arrow-left"></i>
-                <span>Back to My Profile</span>
+                <span>Back</span>
             </a>
         </div>
         {% endif %}

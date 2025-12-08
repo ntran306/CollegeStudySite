@@ -287,6 +287,34 @@ def session_detail(request, session_id):
         messages.error(request, "You cannot view this session.")
         return redirect("tutoringsession:dashboard")
 
+    recommended_students = []
+    session_subject = (session.subject or "").lower().strip()
+
+    # Fetch ALL student profiles except the tutor
+    students = StudentProfile.objects.exclude(user=session.tutor).select_related("user")
+
+    for student in students:
+        # Get subjects/interests field (adjust this name if needed)
+        interests_raw = getattr(student, "interests", "") or ""
+        if not interests_raw:
+            continue
+
+        # Normalize & split
+        interests_list = [s.strip().lower() for s in interests_raw.split(",") if s.strip()]
+        if not interests_list:
+            continue
+
+        # Find matches between session subject and student's subjects
+        matches = [s for s in interests_list if session_subject in s]
+
+        if matches:
+            recommended_students.append({
+                "student": student,
+                "matched": matches,
+            })
+
     return render(request, "tutoringsession/detail.html", {
-        "session": session
+        "session": session,
+        "recommended_students": recommended_students,
     })
+

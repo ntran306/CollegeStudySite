@@ -75,27 +75,33 @@ def logout_view(request):
 # Profile Page
 # ------------------------------------
 def profile_view(request, username=None):
-    # If username is provided, show that user's profile
-    # Otherwise, show the logged-in user's profile
+
+    # Determine whose profile is being viewed
     if username:
         profile_user = get_object_or_404(User, username=username)
         is_own_profile = request.user.is_authenticated and request.user == profile_user
     else:
-        # No username provided - must be logged in to view own profile
+        # No username → show own profile (must be logged in)
         if not request.user.is_authenticated:
             return redirect('accounts:login')
         profile_user = request.user
         is_own_profile = True
-    
+
+    # Profiles
     student_profile = getattr(profile_user, 'studentprofile', None)
     tutor_profile = getattr(profile_user, 'tutorprofile', None)
-    
+
+    # Determine previous page for Back button
+    back_url = request.META.get('HTTP_REFERER') or '/'
+
     return render(request, 'accounts/profile.html', {
         'profile_user': profile_user,
         'student_profile': student_profile,
         'tutor_profile': tutor_profile,
         'is_own_profile': is_own_profile,
+        'back_url': back_url,
     })
+
 
 def _get_user_profile(u):
     sp = getattr(u, "studentprofile", None)
@@ -143,6 +149,10 @@ def edit_profile_view(request):
 @login_required
 def connect_list(request):
     tab = (request.GET.get('tab') or 'find').lower()
+
+    # ------------------------------------------------------
+    # ORIGINAL STUDENT-FINDING LOGIC (unchanged)
+    # ------------------------------------------------------
     q = (request.GET.get('q') or '').strip()
     users = []  # defensive init
 
@@ -180,7 +190,7 @@ def connect_list(request):
         .order_by("username")
     )
 
-    # ✅ APPLY FILTERS BEFORE MATERIALIZING
+    # APPLY FILTERS
     if q:
         users_qs = users_qs.filter(
             Q(username__icontains=q) |
@@ -195,15 +205,15 @@ def connect_list(request):
             Q(tutorprofile__location__icontains=location)
         )
 
-    # Now materialize and attach a unified .profile
+    # Materialize and attach unified profile
     users = list(users_qs)
     for u in users:
         sp = getattr(u, "studentprofile", None)
         tp = getattr(u, "tutorprofile", None)
-        u.profile = sp if sp is not None else tp
-        u.profile_role = "student" if sp is not None else ("tutor" if tp is not None else None)
+        u.profile = sp if sp else tp
+        u.profile_role = "student" if sp else ("tutor" if tp else None)
 
-    # Radius/road-distance filter (optional)
+    # Radius / road-distance filter
     if location and lat and lng:
         try:
             o_lat = float(lat); o_lng = float(lng)
@@ -211,7 +221,7 @@ def connect_list(request):
             dests = []
             for u in users:
                 p = getattr(u, "profile", None)
-                if p and getattr(p, "latitude", None) is not None and getattr(p, "longitude", None) is not None:
+                if p and getattr(p, "latitude", None) and getattr(p, "longitude", None):
                     dests.append((float(p.latitude), float(p.longitude), u.id))
 
             if dests:
@@ -228,30 +238,25 @@ def connect_list(request):
                         continue
                     u.distance_miles = round(dist, 1)
                     drive_min = res.get("duration_in_traffic_minutes") or res.get("duration_minutes")
-                    u.drive_minutes = round(drive_min, 1) if drive_min is not None else None
+                    u.drive_minutes = round(drive_min, 1) if drive_min else None
                     kept.append(u)
 
                 users = sorted(
                     kept,
                     key=lambda x: (
-                        x.distance_miles if getattr(x, "distance_miles", None) is not None else 1e9,
-                        x.drive_minutes if getattr(x, "drive_minutes", None) is not None else 1e9,
+                        x.distance_miles if getattr(x, "distance_miles", None) else 1e9,
+                        x.drive_minutes if getattr(x, "drive_minutes", None) else 1e9,
                         x.username.lower(),
                     )
                 )
-            # else: nobody has coords → leave `users` as-is
-
         except ValueError:
-            # bad coords; fallback to simple substring match in Python
             users = [
                 u for u in users
-                if getattr(u, "profile", None)
-                and getattr(u.profile, "location", None)
+                if getattr(u.profile, "location", None)
                 and location.lower() in u.profile.location.lower()
             ]
 
-    # 🔎 Build map markers from ALL users with coordinates (not just filtered by location)
-    # Get ALL potential users for the map (not filtered by search query)
+    # MARKERS
     all_mappable_users = (
         User.objects
         .exclude(id=request.user.id)
@@ -259,20 +264,15 @@ def connect_list(request):
         .exclude(id__in=pending_with_ids)
         .select_related("studentprofile", "tutorprofile")
     )
-    
+
     markers = []
     for u in all_mappable_users:
-        sp = getattr(u, "studentprofile", None)
-        tp = getattr(u, "tutorprofile", None)
-        p = sp if sp is not None else tp
-        
-        if not p:
+        p = getattr(u, "studentprofile", None) or getattr(u, "tutorprofile", None)
+        if not p or not p.latitude or not p.longitude:
             continue
-        if not getattr(p, "latitude", None) or not getattr(p, "longitude", None):
+        if str(p.location or "").strip().lower() == "remote":
             continue
-        if str(getattr(p, "location", "") or "").strip().lower() == "remote":
-            continue
-        
+
         markers.append({
             "id": u.id,
             "username": u.username,
@@ -280,7 +280,7 @@ def connect_list(request):
             "lat": float(p.latitude),
             "lng": float(p.longitude),
             "avatar": (p.avatar.url if getattr(p, "avatar", None) else static("img/avatar-placeholder.png")),
-            "distance_miles": None,  # No distance calculation without origin
+            "distance_miles": None,
             "drive_minutes": None,
         })
 
@@ -288,13 +288,15 @@ def connect_list(request):
     has_map_data = bool(markers)
     map_api_key = settings.GOOGLE_MAPS_API_KEY
 
-    # Friends + pending (unchanged)
+    # FRIENDS + PENDING
     friends = User.objects.filter(id__in=list(connected_ids)).order_by('username')
     incoming = FriendRequest.objects.filter(
-        to_user=request.user, status=FriendRequest.PENDING
+        to_user=request.user,
+        status=FriendRequest.PENDING
     ).select_related("from_user").order_by("-created_at")
     outgoing = FriendRequest.objects.filter(
-        from_user=request.user, status=FriendRequest.PENDING
+        from_user=request.user,
+        status=FriendRequest.PENDING
     ).select_related("to_user").order_by("-created_at")
 
     ctx = {
@@ -308,12 +310,12 @@ def connect_list(request):
             "pending_in": incoming.count(),
             "pending_out": outgoing.count(),
         },
-        "request": request,  # so template can echo form values
-        # map props for the template:
+        "request": request,
         "user_markers_json": user_markers_json,
         "has_map_data": has_map_data,
         "GOOGLE_MAPS_API_KEY": map_api_key,
     }
+
     if ctx["tab"] == "pending":
         ctx.update({"incoming": incoming, "outgoing": outgoing})
 

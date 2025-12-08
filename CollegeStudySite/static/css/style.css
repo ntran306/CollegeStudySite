@@ -2104,6 +2104,36 @@ html {
     transform: translateX(5px);
 }
 
+/* ===================================
+   Tutor-Specific Styling for Connect Page
+=================================== */
+
+.action-card.tutor:hover {
+    border-color: #f59e0b !important;
+    box-shadow: 0 4px 16px rgba(245, 158, 11, 0.25);
+}
+
+.action-icon.tutor {
+    background: linear-gradient(135deg, #f59e0b, #fb923c) !important;
+    color: white !important;
+}
+
+.btn-tutor {
+    background: linear-gradient(135deg, #f59e0b, #fb923c) !important;
+    color: white !important;
+    border: none !important;
+    padding: 0.75rem 1.5rem;
+    border-radius: var(--radius-sm);
+    font-weight: 600;
+    transition: all 0.2s ease;
+}
+
+.btn-tutor:hover {
+    background: linear-gradient(135deg, #d97706, #f59e0b) !important;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(245, 158, 11, 0.4);
+}
+
 /* Empty States */
 .empty-state {
     text-align: center;
