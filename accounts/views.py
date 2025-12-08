@@ -106,15 +106,16 @@ def profile_view(request, username=None):
     student_profile = getattr(profile_user, 'studentprofile', None)
     tutor_profile = getattr(profile_user, 'tutorprofile', None)
     
-    # ✅ Get classes with skill levels for students
+    # ✅ FIXED: Get classes with skill levels for students
     student_classes_with_skills = []
     if student_profile:
         from .models import StudentClassSkill
-        for skill in StudentClassSkill.objects.filter(student=student_profile).select_related('class_taken'):
+        for skill in student_profile.class_skills.select_related('class_taken'):
             student_classes_with_skills.append({
                 'name': skill.class_taken.name,
                 'skill_level': skill.skill_level,
-                'color': skill.get_color()
+                'color': skill.get_color(),
+                'skill_label': skill.get_skill_level_display()
             })
     
     return render(request, 'accounts/profile.html', {
@@ -170,10 +171,10 @@ def edit_profile_view(request):
     classes = list(Class.objects.values('id', 'name'))
     
     if profile_type == 'Student':
-        # ✅ Get classes with skill levels for students + skill level choices
+        # ✅ FIXED: Get classes with skill levels for students
         from .models import StudentClassSkill
         current_classes = []
-        for skill in StudentClassSkill.objects.filter(student=profile).select_related('class_taken'):
+        for skill in profile.class_skills.select_related('class_taken'):
             current_classes.append({
                 'id': skill.class_taken.id,
                 'name': skill.class_taken.name,

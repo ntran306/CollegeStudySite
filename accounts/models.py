@@ -21,8 +21,8 @@ class StudentProfile(models.Model):
     latitude = models.FloatField(blank=True, null=True)
     longitude = models.FloatField(blank=True, null=True)
 
-    # ✅ Add classes field
-    classes = models.ManyToManyField(Class, blank=True, related_name='students')
+    # ✅ REMOVED direct classes field - use StudentClassSkill instead
+    # classes relationship is now accessed via student.class_skills.all()
 
     def save(self, *args, **kwargs):
         """
@@ -69,9 +69,8 @@ class StudentProfile(models.Model):
 
 
 class TutorProfile(models.Model):
-    
-    classes = models.ManyToManyField(Class, blank=True, related_name='tutors')
     user = models.OneToOneField(User, on_delete=models.CASCADE)
+    classes = models.ManyToManyField(Class, blank=True, related_name='tutors')
     subjects = models.TextField(blank=True, null=True) #mark for future
     rate = models.DecimalField(max_digits=6, decimal_places=2, blank=True, null=True)
     bio = models.TextField(blank=True, null=True)
@@ -82,7 +81,6 @@ class TutorProfile(models.Model):
     location = models.CharField(max_length=255, blank=True, null=True)
     latitude = models.FloatField(blank=True, null=True)
     longitude = models.FloatField(blank=True, null=True)
-
 
     def save(self, *args, **kwargs):
         """
@@ -178,14 +176,16 @@ class FriendRequest(models.Model):
     def __str__(self):
         return f"{self.from_user} → {self.to_user} [{self.status}]"
     
+
 class StudentClassSkill(models.Model):
     """Through model to track student's skill level in each class"""
+    # ✅ FIXED: Match the labels from your templates
     SKILL_LEVELS = [
         (1, 'Need Help'),
-        (2, 'Beginner'),
+        (2, 'Learning'),
         (3, 'Comfortable'),
-        (4, 'Intermediate'),
-        (5, 'Strong/Advanced'),
+        (4, 'Confident'),
+        (5, 'Expert'),
     ]
     
     SKILL_COLORS = {

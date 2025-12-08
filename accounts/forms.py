@@ -7,62 +7,53 @@ import json
 
 
 class StudentSignUpForm(UserCreationForm):
+    email = forms.EmailField(required=True)
     major = forms.CharField(max_length=100, required=False)
     year = forms.CharField(max_length=20, required=False)
-    
-    # ✅ Change to store JSON with skill levels
-    classes = forms.CharField(required=False, widget=forms.HiddenInput())
-
-    location = forms.CharField(
-            max_length=255,
-            required=False,
-            widget=forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'Enter your city or campus'
-            })
-        )
+    location = forms.CharField(max_length=255, required=False)
     latitude = forms.FloatField(required=False, widget=forms.HiddenInput())
     longitude = forms.FloatField(required=False, widget=forms.HiddenInput())
-   
-    class Meta(UserCreationForm.Meta):
+    classes = forms.CharField(required=False, widget=forms.HiddenInput())
+    
+    class Meta:
         model = User
         fields = ['username', 'email', 'password1', 'password2']
-
+    
     def save(self, commit=True):
-        user = super().save(commit=commit)
+        user = super().save(commit=False)
+        user.email = self.cleaned_data['email']
+        
         if commit:
+            user.save()
+            
+            # Create student profile
             profile = StudentProfile.objects.create(
                 user=user,
                 major=self.cleaned_data.get('major', ''),
                 year=self.cleaned_data.get('year', ''),
                 location=self.cleaned_data.get('location', ''),
-                latitude=self.cleaned_data.get('latitude') or None,
-                longitude=self.cleaned_data.get('longitude') or None,
+                latitude=self.cleaned_data.get('latitude'),
+                longitude=self.cleaned_data.get('longitude'),
             )
             
-            
-            classes_json = self.cleaned_data.get('classes', '')
-            if classes_json:
+            classes_data = self.cleaned_data.get('classes', '')
+            if classes_data:
                 try:
-                    classes_data = json.loads(classes_json)
-                    # classes_data is now: [{"id": 1, "skill_level": 3}, {"id": 2, "skill_level": 5}, ...]
-                    for class_data in classes_data:
-                        class_id = class_data.get('id')
-                        skill_level = class_data.get('skill_level', 3)  # Default to 3 (Comfortable)
-                        
+                    # Parse JSON: [{"id": 1, "skill_level": 3}, ...]
+                    classes_list = json.loads(classes_data)
+                    
+                    for item in classes_list:
+                        class_id = item.get('id')
+                        skill_level = item.get('skill_level', 3)
                         if class_id:
-                            try:
-                                class_obj = Class.objects.get(id=class_id)
-                                StudentClassSkill.objects.create(
-                                    student=profile,
-                                    class_taken=class_obj,
-                                    skill_level=skill_level
-                                )
-                            except Class.DoesNotExist:
-                                pass
-                except (json.JSONDecodeError, TypeError):
-                    pass
-            
+                            StudentClassSkill.objects.create(
+                                student=profile,
+                                class_taken_id=class_id,
+                                skill_level=skill_level
+                            )
+                except (json.JSONDecodeError, ValueError, KeyError) as e:
+                    print(f"Error parsing classes data: {e}")
+        
         return user
 
 
@@ -161,48 +152,37 @@ class StudentProfileForm(forms.ModelForm):
     
     class Meta:
         model = StudentProfile
-        fields = [
-            'major', 'year', 'school',
-            'location', 'latitude', 'longitude',
-            'avatar',
-        ]
+        fields = ['major', 'year', 'school', 'location', 'latitude', 'longitude', 'avatar']
         widgets = {
-            'major': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Your major'}),
-            'year': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Year (e.g. Freshman, Sophomore)'}),
-            'school': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Your school (optional)'}),
-            'location': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Favorite study spot (optional)'}),
             'latitude': forms.HiddenInput(),
             'longitude': forms.HiddenInput(),
         }
     
     def save(self, commit=True):
-        profile = super().save(commit=False)
+        instance = super().save(commit=commit)
+        
         if commit:
-            profile.save()
             
-            # ✅ Handle classes with skill levels from JSON
-            classes_json = self.cleaned_data.get('classes', '')
-            if classes_json:
-                # Clear existing class skills
-                StudentClassSkill.objects.filter(student=profile).delete()
-                
+            classes_data = self.cleaned_data.get('classes', '')
+            if classes_data:
                 try:
-                    classes_data = json.loads(classes_json)
-                    for class_data in classes_data:
-                        class_id = class_data.get('id')
-                        skill_level = class_data.get('skill_level', 3)
-                        
+                    # Parse JSON: [{"id": 1, "skill_level": 3}, ...]
+                    classes_list = json.loads(classes_data)
+                    
+                    # Clear existing skills
+                    StudentClassSkill.objects.filter(student=instance).delete()
+                    
+                    # Create new skills
+                    for item in classes_list:
+                        class_id = item.get('id')
+                        skill_level = item.get('skill_level', 3)
                         if class_id:
-                            try:
-                                class_obj = Class.objects.get(id=class_id)
-                                StudentClassSkill.objects.create(
-                                    student=profile,
-                                    class_taken=class_obj,
-                                    skill_level=skill_level
-                                )
-                            except Class.DoesNotExist:
-                                pass
-                except (json.JSONDecodeError, TypeError):
-                    pass
-            
-        return profile
+                            StudentClassSkill.objects.create(
+                                student=instance,
+                                class_taken_id=class_id,
+                                skill_level=skill_level
+                            )
+                except (json.JSONDecodeError, ValueError, KeyError) as e:
+                    print(f"Error parsing classes data: {e}")
+        
+        return instance
