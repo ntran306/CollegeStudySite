@@ -2,7 +2,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.templatetags.static import static
 from tutoringsession.utils import geocode_address
-from classes.models import Class  # ✅ Add this import
+from classes.models import Class 
 
 
 def avatar_upload_path(instance, filename):
@@ -177,3 +177,38 @@ class FriendRequest(models.Model):
 
     def __str__(self):
         return f"{self.from_user} → {self.to_user} [{self.status}]"
+    
+class StudentClassSkill(models.Model):
+    """Through model to track student's skill level in each class"""
+    SKILL_LEVELS = [
+        (1, 'Need Help'),
+        (2, 'Beginner'),
+        (3, 'Comfortable'),
+        (4, 'Intermediate'),
+        (5, 'Strong/Advanced'),
+    ]
+    
+    SKILL_COLORS = {
+        1: '#ef4444',  # red-500
+        2: '#f97316',  # orange-500
+        3: '#eab308',  # yellow-500
+        4: '#84cc16',  # lime-500
+        5: '#22c55e',  # green-500
+    }
+    
+    student = models.ForeignKey('StudentProfile', on_delete=models.CASCADE, related_name='class_skills')
+    class_taken = models.ForeignKey(Class, on_delete=models.CASCADE, related_name='student_skills')
+    skill_level = models.IntegerField(choices=SKILL_LEVELS, default=3)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        unique_together = ['student', 'class_taken']
+        ordering = ['class_taken__name']
+    
+    def __str__(self):
+        return f"{self.student.user.username} - {self.class_taken.name} ({self.get_skill_level_display()})"
+    
+    def get_color(self):
+        """Return the hex color for this skill level"""
+        return self.SKILL_COLORS.get(self.skill_level, '#eab308')
