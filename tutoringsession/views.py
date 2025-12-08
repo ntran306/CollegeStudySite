@@ -311,24 +311,28 @@ def session_detail(request, session_id):
         return redirect("tutoringsession:dashboard")
 
     recommended_students = []
-    session_subject = (session.subject or "").lower().strip()
+    subject_obj = session.subject
+    session_subject = subject_obj.name.lower().strip() if subject_obj else ""
 
-    # Fetch ALL student profiles except the tutor
-    students = StudentProfile.objects.exclude(user=session.tutor).select_related("user")
+
+    # All students except the tutor
+    students = (
+        StudentProfile.objects
+        .exclude(user=session.tutor)
+        .select_related("user")
+        .prefetch_related("classes")
+    )
 
     for student in students:
-        # Get subjects/interests field (adjust this name if needed)
-        interests_raw = getattr(student, "interests", "") or ""
-        if not interests_raw:
-            continue
+        # Extract clean lowercased class names
+        student_class_names = [
+            cls.name.lower().strip()
+            for cls in student.classes.all()
+            if hasattr(cls, "name")
+        ]
 
-        # Normalize & split
-        interests_list = [s.strip().lower() for s in interests_raw.split(",") if s.strip()]
-        if not interests_list:
-            continue
-
-        # Find matches between session subject and student's subjects
-        matches = [s for s in interests_list if session_subject in s]
+        # Match session subject against student's classes
+        matches = [cls_name for cls_name in student_class_names if session_subject in cls_name]
 
         if matches:
             recommended_students.append({
@@ -340,4 +344,3 @@ def session_detail(request, session_id):
         "session": session,
         "recommended_students": recommended_students,
     })
-
