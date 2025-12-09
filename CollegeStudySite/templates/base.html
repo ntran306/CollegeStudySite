@@ -197,5 +197,64 @@
         });
       }, 4000);
     </script>
+
+{% if user.is_authenticated %}
+    <!-- Chat Widget Container -->
+    <div class="chat-widget-container" id="chatWidget">
+        <!-- Chat Windows Container (for horizontal layout) -->
+        <div class="chat-windows-container" id="chatWindowsContainer">
+            <!-- Individual chat windows will be dynamically added here -->
+        </div>
+
+        <!-- Messages Panel Wrapper -->
+        <div class="chat-messages-panel-wrapper">
+            <!-- Chat Toggle Button -->
+            <button class="chat-toggle-btn" id="chatToggleBtn" title="Messages">
+                <i class="fas fa-comments"></i>
+                <span>Messages</span>
+                <span class="notification-badge" id="chatNotificationBadge" style="display: none;">0</span>
+            </button>
+
+            <!-- Friends List Panel -->
+            <div class="chat-friends-panel" id="chatFriendsPanel">
+                <div class="chat-friends-header">
+                    <h3>Messages</h3>
+                    <button class="chat-friends-close" id="closeFriendsPanel">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="chat-friends-search">
+                    <input type="text" id="friendSearch" placeholder="Search friends...">
+                </div>
+                <div class="chat-friends-list" id="chatFriendsList">
+                    <div class="chat-loading">
+                        <i class="fas fa-spinner"></i>
+                        <p>Loading friends...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chat Widget Configuration -->
+    <div id="chatWidgetConfig" 
+        data-user-id="{{ user.id }}"
+        data-default-avatar="{% static 'img/avatar-default.png' %}"
+        data-get-token-url="{% url 'communication:get_twilio_token' %}"
+        data-list-conversations-url="{% url 'communication:list_conversations' %}"
+        data-get-messages-url="/communication/messaging/conversation/CONVERSATION_SID/messages/"
+        data-get-other-user-url="/communication/messaging/conversation/CONVERSATION_SID/other-user/"
+        data-get-friends-url="{% url 'communication:get_friends_list' %}"
+        data-start-conversation-url="/communication/messaging/start/USER_ID/"
+        style="display: none;">
+    </div>
+
+    <!-- Twilio Conversations SDK -->
+    <script src="https://media.twiliocdn.com/sdk/js/conversations/v2.4/twilio-conversations.min.js"></script>
+
+    <!-- Chat Widget Script -->
+    <script src="{% static 'js/chat-widget.js' %}"></script>
+{% endif %}
+
 </body>
 </html>

@@ -10,7 +10,7 @@ urlpatterns = [
     path('tutoringsession/', include('tutoringsession.urls')), #tutoring sessions
     path('classes/', include('classes.urls')),
     #path('classes/', include('classes.urls')),   #classes
-    #path('communication/', include('communication.urls')), #messaging system
+    path('communication/', include('communication.urls')), #messaging system
 ]
 
 if settings.DEBUG:

@@ -2,7 +2,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.templatetags.static import static
 from tutoringsession.utils import geocode_address
-from classes.models import Class  # ✅ Add this import
+from classes.models import Class
 
 
 def avatar_upload_path(instance, filename):
@@ -21,7 +21,7 @@ class StudentProfile(models.Model):
     latitude = models.FloatField(blank=True, null=True)
     longitude = models.FloatField(blank=True, null=True)
 
-    # ✅ Add classes field
+    # Classes field
     classes = models.ManyToManyField(Class, blank=True, related_name='students')
 
     def save(self, *args, **kwargs):
