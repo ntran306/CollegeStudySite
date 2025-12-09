@@ -7,7 +7,6 @@ import json
 from .models import Class
 
 
-@login_required
 @require_http_methods(["POST"])
 def create_class(request):
     """API endpoint to create a new class dynamically"""

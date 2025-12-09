@@ -110,12 +110,38 @@ def profile_view(request, username=None):
     # Determine previous page for Back button
     back_url = request.META.get('HTTP_REFERER') or '/'
 
+    # ✅ Add student classes with skill levels
+    student_classes_with_skill = []
+    if student_profile:
+        from .models import StudentClassSkill
+        
+        # Skill level colors mapping
+        skill_colors = {
+            1: '#ef4444',  # red
+            2: '#f97316',  # orange
+            3: '#eab308',  # yellow
+            4: '#84cc16',  # lime
+            5: '#22c55e'   # green
+        }
+        
+        # Get skill level labels
+        skill_labels = dict(StudentClassSkill.SKILL_LEVELS)
+        
+        for skill in student_profile.class_skills.select_related('class_taken').all():
+            student_classes_with_skill.append({
+                'class': skill.class_taken,
+                'skill_level': skill.skill_level,
+                'skill_label': skill_labels.get(skill.skill_level, 'Unknown'),
+                'color': skill_colors.get(skill.skill_level, '#eab308')
+            })
+
     return render(request, 'accounts/profile.html', {
         'profile_user': profile_user,
         'student_profile': student_profile,
         'tutor_profile': tutor_profile,
         'is_own_profile': is_own_profile,
         'back_url': back_url,
+        'student_classes_with_skill': student_classes_with_skill,  # ✅ Add this
     })
 
 def _get_user_profile(u):
