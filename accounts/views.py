@@ -110,7 +110,7 @@ def profile_view(request, username=None):
     # Determine previous page for Back button
     back_url = request.META.get('HTTP_REFERER') or '/'
 
-    # ✅ Add student classes with skill levels
+    # ✅ Add student classes with skill levels (for ANY student profile being viewed)
     student_classes_with_skill = []
     if student_profile:
         from .models import StudentClassSkill
@@ -127,6 +127,7 @@ def profile_view(request, username=None):
         # Get skill level labels
         skill_labels = dict(StudentClassSkill.SKILL_LEVELS)
         
+        # Query the class_skills for THIS profile_user's student_profile
         for skill in student_profile.class_skills.select_related('class_taken').all():
             student_classes_with_skill.append({
                 'class': skill.class_taken,
@@ -141,7 +142,7 @@ def profile_view(request, username=None):
         'tutor_profile': tutor_profile,
         'is_own_profile': is_own_profile,
         'back_url': back_url,
-        'student_classes_with_skill': student_classes_with_skill,  # ✅ Add this
+        'student_classes_with_skill': student_classes_with_skill,  # ✅ This passes the data
     })
 
 def _get_user_profile(u):
