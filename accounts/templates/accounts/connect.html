@@ -223,6 +223,9 @@
                   {% if f.email %} • {{ f.email }}{% endif %}
                 </p>
               </div>
+              <a href="{% url 'accounts:profile' f.username %}" class="btn btn-outline-nav">
+                <i class="fas fa-id-card"></i> View Profile
+              </a>
               <span class="section-badge" style="margin-left:auto;">Connected</span>
             </div>
             {% endfor %}
@@ -247,6 +250,9 @@
                         sent {{ fr.created_at }}
                       </p>
                     </div>
+                    <a href="{% url 'accounts:profile' fr.from_user.username %}" class="btn btn-outline-nav">
+                      <i class="fas fa-id-card"></i> View Profile
+                    </a>
                     <form method="post" action="{% url 'accounts:connect_accept' fr.id %}" style="margin-right:.5rem;">
                       {% csrf_token %}
                       <button class="btn btn-primary"><i class="fas fa-check"></i> Accept</button>
@@ -276,6 +282,9 @@
                         requested {{ fr.created_at }}
                       </p>
                     </div>
+                    <a href="{% url 'accounts:profile' fr.to_user.username %}" class="btn btn-outline-nav">
+                      <i class="fas fa-id-card"></i> View Profile
+                    </a>
                     <form method="post" action="{% url 'accounts:connect_cancel' fr.id %}">
                       {% csrf_token %}
                       <button class="btn btn-outline-nav"><i class="fas fa-ban"></i> Cancel</button>
