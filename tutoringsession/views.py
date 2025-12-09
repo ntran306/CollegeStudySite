@@ -34,7 +34,7 @@ def index(request):
     # --- basic text filters ---
     subject = (request.GET.get("subject") or "").strip()
     if subject:
-        qs = qs.filter(subject__icontains=subject)
+        qs = qs.filter(subject__name__icontains=subject)
 
     tutor_q = (request.GET.get("tutor") or "").strip()
     if tutor_q:
@@ -111,7 +111,7 @@ def index(request):
                 "id": s.id,
                 "lat": float(s.latitude),
                 "lng": float(s.longitude),
-                "title": s.subject.name,
+                "title": s.subject.name if s.subject else "",
                 "location": s.location,
                 "tutor": s.tutor.username,
                 "date": s.date.isoformat() if s.date else "",

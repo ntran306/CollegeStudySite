@@ -2,7 +2,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.templatetags.static import static
 from tutoringsession.utils import geocode_address
-from classes.models import Class  # ✅ Add this import
+from classes.models import Class 
 
 
 def avatar_upload_path(instance, filename):
@@ -21,8 +21,8 @@ class StudentProfile(models.Model):
     latitude = models.FloatField(blank=True, null=True)
     longitude = models.FloatField(blank=True, null=True)
 
-    # ✅ Add classes field
-    classes = models.ManyToManyField(Class, blank=True, related_name='students')
+    # ✅ REMOVED direct classes field - use StudentClassSkill instead
+    # classes relationship is now accessed via student.class_skills.all()
 
     def save(self, *args, **kwargs):
         """
@@ -69,9 +69,8 @@ class StudentProfile(models.Model):
 
 
 class TutorProfile(models.Model):
-    
-    classes = models.ManyToManyField(Class, blank=True, related_name='tutors')
     user = models.OneToOneField(User, on_delete=models.CASCADE)
+    classes = models.ManyToManyField(Class, blank=True, related_name='tutors')
     subjects = models.TextField(blank=True, null=True) #mark for future
     rate = models.DecimalField(max_digits=6, decimal_places=2, blank=True, null=True)
     bio = models.TextField(blank=True, null=True)
@@ -82,7 +81,6 @@ class TutorProfile(models.Model):
     location = models.CharField(max_length=255, blank=True, null=True)
     latitude = models.FloatField(blank=True, null=True)
     longitude = models.FloatField(blank=True, null=True)
-
 
     def save(self, *args, **kwargs):
         """
@@ -177,3 +175,40 @@ class FriendRequest(models.Model):
 
     def __str__(self):
         return f"{self.from_user} → {self.to_user} [{self.status}]"
+    
+
+class StudentClassSkill(models.Model):
+    """Through model to track student's skill level in each class"""
+    # ✅ FIXED: Match the labels from your templates
+    SKILL_LEVELS = [
+        (1, 'Need Help'),
+        (2, 'Learning'),
+        (3, 'Comfortable'),
+        (4, 'Confident'),
+        (5, 'Expert'),
+    ]
+    
+    SKILL_COLORS = {
+        1: '#ef4444',  # red-500
+        2: '#f97316',  # orange-500
+        3: '#eab308',  # yellow-500
+        4: '#84cc16',  # lime-500
+        5: '#22c55e',  # green-500
+    }
+    
+    student = models.ForeignKey('StudentProfile', on_delete=models.CASCADE, related_name='class_skills')
+    class_taken = models.ForeignKey(Class, on_delete=models.CASCADE, related_name='student_skills')
+    skill_level = models.IntegerField(choices=SKILL_LEVELS, default=3)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        unique_together = ['student', 'class_taken']
+        ordering = ['class_taken__name']
+    
+    def __str__(self):
+        return f"{self.student.user.username} - {self.class_taken.name} ({self.get_skill_level_display()})"
+    
+    def get_color(self):
+        """Return the hex color for this skill level"""
+        return self.SKILL_COLORS.get(self.skill_level, '#eab308')

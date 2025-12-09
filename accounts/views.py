@@ -36,11 +36,15 @@ def signup_student(request):
     else:
         form = StudentSignUpForm()
     
-    # ✅ Pass classes to template
+    # ✅ Pass classes AND skill levels to template
     classes = list(Class.objects.values('id', 'name'))
+    from .models import StudentClassSkill
+    skill_levels = StudentClassSkill.SKILL_LEVELS
+    
     return render(request, 'accounts/signup_student.html', {
         'form': form,
         'classes': classes,
+        'skill_levels': skill_levels,
     })
 
 # ------------------------------------
@@ -87,13 +91,10 @@ def logout_view(request):
 # Profile Page
 # ------------------------------------
 def profile_view(request, username=None):
-    # If username is provided, show that user's profile
-    # Otherwise, show the logged-in user's profile
     if username:
         profile_user = get_object_or_404(User, username=username)
         is_own_profile = request.user.is_authenticated and request.user == profile_user
     else:
-        # No username provided - must be logged in to view own profile
         if not request.user.is_authenticated:
             return redirect('accounts:login')
         profile_user = request.user
@@ -102,11 +103,24 @@ def profile_view(request, username=None):
     student_profile = getattr(profile_user, 'studentprofile', None)
     tutor_profile = getattr(profile_user, 'tutorprofile', None)
     
+    # ✅ Get classes with skill levels for students
+    student_classes_with_skill = []
+    if student_profile:
+        from .models import StudentClassSkill
+        for skill in StudentClassSkill.objects.filter(student=student_profile).select_related('class_taken'):
+            student_classes_with_skill.append({
+                'class': skill.class_taken,
+                'skill_level': skill.skill_level,
+                'skill_label': skill.get_skill_level_display(),
+                'color': skill.get_color()
+            })
+    
     return render(request, 'accounts/profile.html', {
         'profile_user': profile_user,
         'student_profile': student_profile,
         'tutor_profile': tutor_profile,
         'is_own_profile': is_own_profile,
+        'student_classes_with_skill': student_classes_with_skill,
     })
 
 def _get_user_profile(u):
@@ -154,15 +168,26 @@ def edit_profile_view(request):
     classes = list(Class.objects.values('id', 'name'))
     
     if profile_type == 'Student':
-        current_classes = list(profile.classes.values('id', 'name'))
+        # ✅ FIXED: Get classes with skill levels for students
+        from .models import StudentClassSkill
+        current_classes = []
+        for skill in profile.class_skills.select_related('class_taken'):
+            current_classes.append({
+                'id': skill.class_taken.id,
+                'name': skill.class_taken.name,
+                'skill_level': skill.skill_level
+            })
         context['classes'] = classes
         context['current_classes'] = current_classes
+        context['skill_levels'] = StudentClassSkill.SKILL_LEVELS
+        
     elif profile_type == 'Tutor':
         current_classes = list(profile.classes.values('id', 'name'))
         context['classes'] = classes
         context['current_classes'] = current_classes
     
     return render(request, 'accounts/edit_profile.html', context)
+
 
 # ------------------------------------
 # Connections Page & View
