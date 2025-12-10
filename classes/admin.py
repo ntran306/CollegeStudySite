@@ -6,13 +6,13 @@ class ClassAdmin(admin.ModelAdmin):
     list_display = ['name', 'created_at', 'student_count', 'tutor_count']
     search_fields = ['name']
     list_filter = ['created_at']
-    ordering = ['-created_at']
+    ordering = ['name']
     readonly_fields = ['created_at']
     
     # Add custom columns to show usage
     def student_count(self, obj):
         """Show how many students are taking this class"""
-        return obj.students.count()
+        return obj.student_skills.count()
     student_count.short_description = 'Students Taking'
     
     def tutor_count(self, obj):
@@ -38,7 +38,7 @@ class ClassAdmin(admin.ModelAdmin):
     def get_queryset(self, request):
         """Optimize queries by prefetching related data"""
         qs = super().get_queryset(request)
-        return qs.prefetch_related('students', 'tutors', 'sessions')
+        return qs.prefetch_related('student_skills', 'tutors')
     
     # Make it easy to see related objects
     fieldsets = (
