@@ -1,31 +1,54 @@
-# Python
-*.pyc
+# ---- PYTHON / DJANGO ----
+__pycache__/
+*.py[cod]
 *.pyo
 *.pyd
-__pycache__/
-**/__pycache__/
+*.pdb
+*.pyc
+*.egg-info/
+*.sqlite3
+db.sqlite3
 
 # Virtual environments
 venv/
 env/
+ENV/
 .venv/
+.ENV/
 
-# Django
-db.sqlite3
-*.sqlite3
+# Django specific
+*.log
+staticfiles/
+media/
+local_settings.py
 
-# Static and media
-/staticfiles/
-/static/
-/media/
+# Migrations cache
+*/migrations/__pycache__/
+*/__pycache__/
 
-# Environment variables
+# ---- SECRETS / ENV ----
+# Twilio, Google Maps, etc.
 .env
+.env.local
+.env.production
+.env.development
 *.env
 
-# VSCode
-.vscode/
+# ---- NODE / FRONTEND ----
+node_modules/
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+dist/
+build/
 
-# OS junk
+# ---- VS CODE ----
+.vscode/
+*.code-workspace
+
+# ---- OS SYSTEM FILES ----
 .DS_Store
 Thumbs.db
+
+# ---- OTHER ----
+*.bak

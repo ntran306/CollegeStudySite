@@ -111,26 +111,38 @@ def start_conversation(request, user_id: int):
 @login_required
 @require_GET
 def list_conversations(request):
+    """
+    Returns all conversations where the current user is a participant.
+    """
     client = get_twilio_client()
     identity = f"user_{request.user.id}"
     data = []
 
     try:
-        # Conversations where this user is a participant
-        user_convs = client.conversations.v1.users(identity).user_conversations.list(limit=100)
+        # Get all conversations in the service
         svc = client.conversations.v1.services(dm.CONV_SERVICE_SID)
-
-        for uc in user_convs:
+        all_conversations = svc.conversations.list(limit=100)
+        
+        print(f"[list_conversations] Found {len(all_conversations)} total conversations")
+        
+        # Filter for conversations where this user is a participant
+        for conv in all_conversations:
             try:
-                # Fetch conversation
-                conv = svc.conversations(uc.conversation_sid).fetch()
-
-                # Get "other" user in this conversation (for 1–1 DMs)
-                other_user = get_other_user_in_conversation(uc.conversation_sid, request.user.id)
-                friendly_name = other_user["username"] if other_user else uc.conversation_sid
+                # Check if user is a participant in this conversation
+                participants = conv.participants.list()
+                participant_identities = [p.identity for p in participants]
+                
+                if identity not in participant_identities:
+                    continue  # Skip this conversation
+                
+                print(f"[list_conversations] User is participant in {conv.sid}")
+                
+                # Get "other" user in this conversation (for 1-1 DMs)
+                other_user = get_other_user_in_conversation(conv.sid, request.user.id)
+                friendly_name = other_user["username"] if other_user else conv.sid
 
                 # Fetch last message in this conversation
-                last_list = svc.conversations(uc.conversation_sid).messages.list(limit=1)
+                last_list = conv.messages.list(limit=1, order='desc')
                 last_msg = last_list[0] if last_list else None
 
                 if last_msg:
@@ -143,39 +155,36 @@ def list_conversations(request):
                     last_date = None
 
                 data.append({
-                    "sid": uc.conversation_sid,
+                    "sid": conv.sid,
                     "friendly_name": friendly_name,
                     "other_user_id": other_user["user_id"] if other_user else None,
                     "other_username": other_user["username"] if other_user else None,
 
-                    # NEW fields for preview
+                    # Preview fields
                     "last_message_body": last_body,
                     "last_message_author": last_author,
                     "last_message_date_created": last_date,
                 })
 
             except Exception as e:
-                print(f"[list_conversations] Error fetching {uc.conversation_sid}: {e}")
-                # Still include conversation, but with minimal info
-                data.append({
-                    "sid": uc.conversation_sid,
-                    "friendly_name": uc.conversation_sid,
-                    "other_user_id": None,
-                    "other_username": None,
-                    "last_message_body": "",
-                    "last_message_author": None,
-                    "last_message_date_created": None,
-                })
+                print(f"[list_conversations] Error processing conversation {conv.sid}: {e}")
+                import traceback
+                traceback.print_exc()
+                continue
 
+        print(f"[list_conversations] Returning {len(data)} conversations for user {request.user.id}")
         return JsonResponse({"conversations": data})
 
     except TwilioRestException as e:
-        # User may not exist in Twilio yet or some Twilio error
         print(f"[list_conversations] Twilio error: {e}")
+        import traceback
+        traceback.print_exc()
         return JsonResponse({"conversations": []})
 
     except Exception as e:
         print(f"[list_conversations] Error: {e}")
+        import traceback
+        traceback.print_exc()
         return JsonResponse({"conversations": []})
 
 @login_required

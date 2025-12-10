@@ -34,7 +34,7 @@ def index(request):
     # --- basic text filters ---
     subject = (request.GET.get("subject") or "").strip()
     if subject:
-        qs = qs.filter(subject__icontains=subject)
+        qs = qs.filter(subject__name__icontains=subject)
 
     tutor_q = (request.GET.get("tutor") or "").strip()
     if tutor_q:
@@ -111,7 +111,7 @@ def index(request):
                 "id": s.id,
                 "lat": float(s.latitude),
                 "lng": float(s.longitude),
-                "title": s.subject,
+                "title": s.subject.name if s.subject else "",
                 "location": s.location,
                 "tutor": s.tutor.username,
                 "date": s.date.isoformat() if s.date else "",
@@ -177,6 +177,71 @@ def request_session(request, session_id):
 
     return redirect("tutoringsession:index")
 
+@login_required
+def approve_request(request, request_id):
+    req = get_object_or_404(SessionRequest, id=request_id)
+
+    # Permission check
+    if req.session.tutor != request.user:
+        messages.error(request, "You cannot approve requests for this session.")
+        return redirect("tutoringsession:dashboard")
+
+    # Prevent approving if full
+    if req.session.is_full():
+        messages.error(request, "This session is full.")
+        return redirect("tutoringsession:detail", req.session.id)
+
+    req.status = "approved"
+    req.save()
+
+    messages.success(request, f"{req.student.username} has been approved!")
+    return redirect("tutoringsession:detail", req.session.id)
+
+
+@login_required
+def decline_request(request, request_id):
+    req = get_object_or_404(SessionRequest, id=request_id)
+
+    if req.session.tutor != request.user:
+        messages.error(request, "You cannot decline requests for this session.")
+        return redirect("tutoringsession:dashboard")
+
+    req.status = "declined"
+    req.save()
+
+    messages.info(request, f"Request from {req.student.username} declined.")
+    return redirect("tutoringsession:detail", req.session.id)
+
+@login_required
+def my_requests(request):
+    requests_qs = SessionRequest.objects.filter(student=request.user).select_related("session")
+
+    pending = requests_qs.filter(status="pending").order_by("session__date", "session__start_time")
+    approved = requests_qs.filter(status="approved").order_by("session__date", "session__start_time")
+    declined = requests_qs.filter(status="declined").order_by("session__date", "session__start_time")
+
+    return render(request, "tutoringsession/my_requests.html", {
+        "pending": pending,
+        "approved": approved,
+        "declined": declined,
+    })
+
+@login_required
+def cancel_request(request, request_id):
+    req = get_object_or_404(SessionRequest, id=request_id, student=request.user)
+
+    # Students cannot cancel declined requests (not necessary)
+    # But safe to prevent weird behavior
+    if req.status == "declined":
+        messages.error(request, "This request cannot be canceled.")
+        return redirect("tutoringsession:my_requests")
+
+    # Cancel by deleting or marking as canceled
+    req.status = "canceled"
+    req.save()
+
+    messages.success(request, "Your request has been canceled.")
+    return redirect("tutoringsession:my_requests")
 
 def search_students(request):
     qs = StudentProfile.objects.select_related("user").all()
@@ -341,6 +406,37 @@ def session_detail(request, session_id):
         messages.error(request, "You cannot view this session.")
         return redirect("tutoringsession:dashboard")
 
+    recommended_students = []
+    subject_obj = session.subject
+    session_subject = subject_obj.name.lower().strip() if subject_obj else ""
+
+
+    # All students except the tutor
+    students = (
+        StudentProfile.objects
+        .exclude(user=session.tutor)
+        .select_related("user")
+        .prefetch_related("class_skills__class_taken")
+    )
+
+    for student in students:
+        # Extract clean lowercased class names
+        student_class_names = [
+            skill.class_taken.name.lower().strip()
+            for skill in student.class_skills.all()
+            if hasattr(skill.class_taken, "name")
+        ]
+
+        # Match session subject against student's classes
+        matches = [cls_name for cls_name in student_class_names if session_subject in cls_name]
+
+        if matches:
+            recommended_students.append({
+                "student": student,
+                "matched": matches,
+            })
+
     return render(request, "tutoringsession/detail.html", {
-        "session": session
+        "session": session,
+        "recommended_students": recommended_students,
     })

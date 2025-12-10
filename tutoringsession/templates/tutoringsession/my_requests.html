@@ -1,0 +1,222 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="requests-page">
+    <div class="requests-container">
+        
+        <!-- Page Header -->
+        <div class="requests-header">
+            <div class="requests-title-section">
+                <h1>
+                    <i class="fas fa-clipboard-list"></i>
+                    My Session Requests
+                </h1>
+                <p class="requests-subtitle">Track your pending, approved, and declined tutoring session requests</p>
+            </div>
+        </div>
+
+        <!-- Requests Sections -->
+        <div class="requests-content">
+
+            <!-- Pending Requests -->
+            <div class="requests-section">
+                <div class="requests-section-header pending">
+                    <div class="section-icon">
+                        <i class="fas fa-hourglass-half"></i>
+                    </div>
+                    <div>
+                        <h2>Pending Requests</h2>
+                        <p>Waiting for tutor approval</p>
+                    </div>
+                    {% if pending %}
+                        <span class="request-count pending">{{ pending|length }}</span>
+                    {% endif %}
+                </div>
+
+                {% if pending %}
+                    <div class="request-cards">
+                        {% for r in pending %}
+                            <div class="request-card pending">
+                                <div class="request-status-indicator pending"></div>
+                                <div class="request-card-header">
+                                    <div class="request-subject">
+                                        <i class="fas fa-book"></i>
+                                        <h3>{{ r.session.subject }}</h3>
+                                    </div>
+                                    <span class="status-badge pending">
+                                        <i class="fas fa-clock"></i>
+                                        Pending
+                                    </span>
+                                </div>
+                                <div class="request-card-body">
+                                    <div class="request-info-row">
+                                        <div class="request-info-item">
+                                            <i class="fas fa-calendar"></i>
+                                            <span>{{ r.session.date|date:"M d, Y" }}</span>
+                                        </div>
+                                        <div class="request-info-item">
+                                            <i class="fas fa-map-marker-alt"></i>
+                                            <span>{{ r.session.location|default:"Remote" }}</span>
+                                        </div>
+                                    </div>
+                                    <div class="request-timestamp">
+                                        <i class="fas fa-info-circle"></i>
+                                        <span>Requested {{ r.created_at|timesince }} ago</span>
+                                    </div>
+                                </div>
+                                <div class="request-card-footer">
+                                    <a href="{% url 'tutoringsession:detail' r.session.id %}" class="btn btn-outline-small">
+                                        <i class="fas fa-eye"></i>
+                                        <span>View Session</span>
+                                    </a>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="empty-requests">
+                        <i class="fas fa-inbox"></i>
+                        <p>No pending requests</p>
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Approved Requests -->
+            <div class="requests-section">
+                <div class="requests-section-header approved">
+                    <div class="section-icon approved">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div>
+                        <h2>Approved Requests</h2>
+                        <p>Sessions you're enrolled in</p>
+                    </div>
+                    {% if approved %}
+                        <span class="request-count approved">{{ approved|length }}</span>
+                    {% endif %}
+                </div>
+
+                {% if approved %}
+                    <div class="request-cards">
+                        {% for r in approved %}
+                            <div class="request-card approved">
+                                <div class="request-status-indicator approved"></div>
+                                <div class="request-card-header">
+                                    <div class="request-subject">
+                                        <i class="fas fa-book"></i>
+                                        <h3>{{ r.session.subject }}</h3>
+                                    </div>
+                                    <span class="status-badge approved">
+                                        <i class="fas fa-check"></i>
+                                        Approved
+                                    </span>
+                                </div>
+                                <div class="request-card-body">
+                                    <div class="request-info-row">
+                                        <div class="request-info-item">
+                                            <i class="fas fa-calendar"></i>
+                                            <span>{{ r.session.date|date:"M d, Y" }}</span>
+                                        </div>
+                                        <div class="request-info-item">
+                                            <i class="fas fa-map-marker-alt"></i>
+                                            <span>{{ r.session.location|default:"Remote" }}</span>
+                                        </div>
+                                    </div>
+                                    <div class="request-timestamp">
+                                        <i class="fas fa-check-circle"></i>
+                                        <span>Approved {{ r.created_at|timesince }} ago</span>
+                                    </div>
+                                </div>
+                                <div class="request-card-footer">
+                                    <a href="{% url 'tutoringsession:detail' r.session.id %}" class="btn btn-outline-small">
+                                        <i class="fas fa-eye"></i>
+                                        <span>View Session</span>
+                                    </a>
+                                    <a href="{% url 'tutoringsession:cancel_request' r.id %}" class="btn btn-outline-danger-small">
+                                        <i class="fas fa-sign-out-alt"></i>
+                                        <span>Leave</span>
+                                    </a>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="empty-requests">
+                        <i class="fas fa-inbox"></i>
+                        <p>No approved requests</p>
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Declined Requests -->
+            <div class="requests-section">
+                <div class="requests-section-header declined">
+                    <div class="section-icon declined">
+                        <i class="fas fa-times-circle"></i>
+                    </div>
+                    <div>
+                        <h2>Declined Requests</h2>
+                        <p>Requests that were not approved</p>
+                    </div>
+                    {% if declined %}
+                        <span class="request-count declined">{{ declined|length }}</span>
+                    {% endif %}
+                </div>
+
+                {% if declined %}
+                    <div class="request-cards">
+                        {% for r in declined %}
+                            <div class="request-card declined">
+                                <div class="request-status-indicator declined"></div>
+                                <div class="request-card-header">
+                                    <div class="request-subject">
+                                        <i class="fas fa-book"></i>
+                                        <h3>{{ r.session.subject }}</h3>
+                                    </div>
+                                    <span class="status-badge declined">
+                                        <i class="fas fa-times"></i>
+                                        Declined
+                                    </span>
+                                </div>
+                                <div class="request-card-body">
+                                    <div class="request-info-row">
+                                        <div class="request-info-item">
+                                            <i class="fas fa-calendar"></i>
+                                            <span>{{ r.session.date|date:"M d, Y" }}</span>
+                                        </div>
+                                        <div class="request-info-item">
+                                            <i class="fas fa-map-marker-alt"></i>
+                                            <span>{{ r.session.location|default:"Remote" }}</span>
+                                        </div>
+                                    </div>
+                                    <div class="request-timestamp">
+                                        <i class="fas fa-times-circle"></i>
+                                        <span>Declined {{ r.created_at|timesince }} ago</span>
+                                    </div>
+                                </div>
+                                <div class="request-card-footer">
+                                    <a href="{% url 'tutoringsession:detail' r.session.id %}" class="btn btn-outline-small">
+                                        <i class="fas fa-eye"></i>
+                                        <span>View Session</span>
+                                    </a>
+                                    <a href="{% url 'tutoringsession:cancel_request' r.id %}" class="btn btn-outline-danger-small">
+                                        <i class="fas fa-trash"></i>
+                                        <span>Remove</span>
+                                    </a>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="empty-requests">
+                        <i class="fas fa-inbox"></i>
+                        <p>No declined requests</p>
+                    </div>
+                {% endif %}
+            </div>
+
+        </div>
+    </div>
+</div>
+
+{% endblock %}

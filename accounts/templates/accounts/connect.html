@@ -5,11 +5,12 @@
 <section class="section-container" style="margin-top:2rem;">
   <div class="profile-section">
     <div class="section-header">
-      <h2><i class="fas fa-user-friends"></i> Connect with Students</h2>
+      <h2><i class="fas fa-user-friends"></i> Connect with People</h2>
     </div>
 
     <div class="section-content">
       <div class="tabs" style="display:flex; gap:.5rem; margin-bottom:1rem;">
+
         <a href="?tab=find" class="btn {% if tab == 'find' %}btn-primary{% else %}btn-outline-nav{% endif %}">
           <i class="fas fa-user-plus"></i> Find New Friends
           <span class="section-badge" style="margin-left:.5rem;">{{ counts.find|default:0 }}</span>
@@ -164,22 +165,32 @@
         {% if users %}
           <div class="action-cards">
             {% for u in users %}
-            <div class="action-card">
-              <div class="action-icon"><i class="fas fa-user"></i></div>
+            <div class="action-card {% if u.tutorprofile %}tutor{% endif %}">
+              <div class="action-icon {% if u.tutorprofile %}tutor{% endif %}"><i class="fas fa-user"></i></div>
               <div class="action-content">
                 <h3>{{ u.username }}</h3>
                 <p style="color:var(--text-secondary); margin-top:.25rem;">
                   {% if u.first_name or u.last_name %}
                     {{ u.first_name }} {{ u.last_name }}
-                  {% else %}
-                    Student
                   {% endif %}
+
+                  {% if u.studentprofile %}
+                    Student
+                  {% elif u.tutorprofile %}
+                    Tutor
+                  {% else %}
+                    Not Specified
+                  {% endif %}
+
                   {% if u.email %} • {{ u.email }}{% endif %}
                   {% if u.distance_miles %} • ~{{ u.distance_miles }} mi{% endif %}
                   {% if u.drive_minutes %} • ~{{ u.drive_minutes }} min{% endif %}
                 </p>
               </div>
-              <a href="{% url 'accounts:connect_request' u.id %}" class="btn btn-primary">
+              <a href="{% url 'accounts:profile' u.username %}" class="btn btn-outline-nav">
+                <i class="fas fa-id-card"></i> View Profile
+              </a>
+              <a href="{% url 'accounts:connect_request' u.id %}" class="btn {% if u.tutorprofile %}btn-tutor{% else %}btn-primary{% endif %}">
                 <i class="fas fa-user-plus"></i> Connect
               </a>
             </div>

@@ -70,7 +70,7 @@
                                     </a>
                                 </li>
                                 <li>
-                                    <a href="#"
+                                    <a href="{% url 'tutoringsession:my_requests' %}"
                                     class="{% if request.resolver_match.view_name == 'tutoringsession:my_requests' %}active{% endif %}">
                                         <i class="fas fa-clipboard-list"></i>
                                         <span>My Requests</span>

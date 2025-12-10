@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load static %}
+{% load session_filters %}
 
 {% block content %}
 
@@ -108,9 +109,9 @@
 <!-- =========================
      Map Section
 ========================== -->
-<section class="section-container">
+<section class="section-container" style="margin-top:1rem;">
   <div class="profile-section">
-    <div class="section-header-inline" style="display:flex; align-items:center; justify-content:space-between; gap:1rem; margin-bottom:0.75rem;">
+    <div class="section-header-inline" style="display:flex; align-items:center; justify-content:space-between; gap:1rem; margin:2rem; padding-left: 1rem;">
       <h2><i class="fas fa-map-marked-alt"></i> Nearby Sessions</h2>
       {% if has_map_data %}
       <span class="section-badge" id="map-debug-badge" style="background:#22c55e;">
@@ -254,7 +255,7 @@
 <!-- =========================
      Results
 ========================== -->
-<section class="section-container">
+<section class="section-container" style="margin-top:1rem;">
   <div class="profile-section">
     <div class="section-header">
       <h2><i class="fas fa-list"></i> Sessions <span style="color:var(--text-secondary); font-weight:600;">({{ sessions|length }})</span></h2>
@@ -309,9 +310,26 @@
                   {% if user.is_authenticated %}
                     <form method="post" action="{% url 'tutoringsession:request' s.id %}">
                       {% csrf_token %}
-                      <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-hand-paper"></i> Request Session
-                      </button>
+                      
+                      {% with req=s.requests|get_request_for:user %}
+                        {% if req %}
+                            {% if req.status == "pending" %}
+                                <button class="btn btn-secondary" disabled>Pending</button>
+                            {% elif req.status == "approved" %}
+                                <button class="btn btn-success" disabled>Enrolled</button>
+                            {% elif req.status == "declined" %}
+                                <button class="btn btn-outline-nav" disabled>Declined</button>
+                            {% endif %}
+                        {% else %}
+                            <form method="post" action="{% url 'tutoringsession:request' s.id %}">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-hand-paper"></i> Request Session
+                                </button>
+                            </form>
+                        {% endif %}
+                    {% endwith %}
+
                     </form>
                   {% else %}
                     <a class="btn btn-primary" href="{% url 'accounts:login' %}?next={% url 'tutoringsession:index' %}">

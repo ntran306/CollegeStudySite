@@ -6,7 +6,6 @@ class TutoringSessionForm(forms.ModelForm):
     class Meta:
         model = TutoringSession
         fields = [
-            # ✅ Remove "subject" from here - we'll handle it in the view
             "description",
             "date",
             "start_time",

@@ -23,14 +23,12 @@ class ChatWidgetManager {
             getFriends: configEl.dataset.getFriendsUrl
         };
         
-        // Debug log
         console.log('Chat widget URLs loaded:', this.urls);
         this.unreadCounts = new Map();
         
         this.init();
     }
 
-     // --- Helpers for friend list state ---
     updateFriendLastMessage(conversationSid, message) {
         if (!this.mergedFriendsList) return;
 
@@ -55,11 +53,10 @@ class ChatWidgetManager {
             const da = a.last_message_date ? new Date(a.last_message_date) : null;
             const db = b.last_message_date ? new Date(b.last_message_date) : null;
 
-            if (da && db) return db - da;          // newest first
+            if (da && db) return db - da;
             if (db) return 1;
             if (da) return -1;
 
-            // fallback: alphabetical by username so it’s stable
             return (a.username || '').localeCompare(b.username || '');
         });
     }
@@ -80,7 +77,8 @@ class ChatWidgetManager {
             toggleBtn: !!this.toggleBtn,
             friendsPanel: !!this.friendsPanel,
             friendsList: !!this.friendsList,
-            widgetContainer: !!this.widgetContainer
+            widgetContainer: !!this.widgetContainer,
+            notificationBadge: !!this.notificationBadge
         });
 
         if (!this.toggleBtn) {
@@ -88,7 +86,7 @@ class ChatWidgetManager {
             return;
         }
 
-        // Attach event listeners FIRST - don't wait for Twilio
+        // Attach event listeners
         this.toggleBtn.addEventListener('click', () => {
             console.log('Toggle button clicked');
             this.toggleFriendsPanel();
@@ -104,12 +102,12 @@ class ChatWidgetManager {
 
         console.log('Event listeners attached');
 
-        // Load friends and conversations first (don't wait for Twilio)
+        // Load friends and conversations first
         this.loadFriendsAndConversations().catch(err => {
             console.error('Error loading friends:', err);
         });
         
-        // Initialize Twilio in background (don't await)
+        // Initialize Twilio in background
         this.initializeTwilio().catch(err => {
             console.error('Error initializing Twilio:', err);
         });
@@ -146,10 +144,8 @@ class ChatWidgetManager {
                 return;
             }
 
-            // Create Twilio Client with new Client() constructor
             this.twilioClient = new Twilio.Conversations.Client(data.token);
             
-            // Wait for client initialization
             this.twilioClient.on('stateChanged', (state) => {
                 console.log('Twilio client state:', state);
                 if (state === 'initialized') {
@@ -168,42 +164,45 @@ class ChatWidgetManager {
     }
 
     setupClientListeners() {
-        // FIXED: Set up listeners at client level for better performance
+        // Don't set up conversation listeners automatically - wait for loadUnreadCounts
         this.twilioClient.on('conversationJoined', (conversation) => {
             console.log('Joined conversation:', conversation.sid);
-            this.setupConversationListeners(conversation);
+            // Don't call setupConversationListeners here - it will be called in loadUnreadCounts
         });
 
         this.twilioClient.on('conversationAdded', (conversation) => {
             console.log('Conversation added:', conversation.sid);
-            this.setupConversationListeners(conversation);
+            // Don't call setupConversationListeners here either
         });
 
         this.twilioClient.on('messageAdded', (message) => {
             console.log('Message added via client listener:', message);
             this.handleNewMessage(message);
         });
+
+        // Load unread counts now that client is ready
+        console.log('🔄 Twilio client ready, loading unread counts...');
+        this.loadUnreadCounts();
     }
 
     async setupConversationListeners(conversation) {
-    const sid = conversation.sid;
+        const sid = conversation.sid;
 
-    // avoid wiring the same conversation multiple times
-    if (this.conversationListeners.has(sid)) {
-        return;
+        if (this.conversationListeners.has(sid)) {
+            return;
+        }
+        this.conversationListeners.add(sid);
+
+        this.activeConversations.set(sid, conversation);
+
+        conversation.on('typingStarted', (participant) => {
+            this.showTypingIndicator(sid, participant);
+        });
+
+        conversation.on('typingEnded', (participant) => {
+            this.hideTypingIndicator(sid);
+        });
     }
-    this.conversationListeners.add(sid);
-
-    this.activeConversations.set(sid, conversation);
-
-    conversation.on('typingStarted', (participant) => {
-        this.showTypingIndicator(sid, participant);
-    });
-
-    conversation.on('typingEnded', (participant) => {
-        this.hideTypingIndicator(sid);
-    });
-}
 
     async loadFriendsAndConversations() {
         try {
@@ -218,22 +217,30 @@ class ChatWidgetManager {
             this.friends = friendsData.friends || [];
             this.conversations = conversationsData.conversations || [];
             
+            console.log('🔍 DEBUG - Raw data:', {
+                friends: this.friends,
+                conversations: this.conversations
+            });
+            
+            const conversationsByUserId = new Map();
+            this.conversations.forEach(conv => {
+                if (conv.other_user_id) {
+                    conversationsByUserId.set(Number(conv.other_user_id), conv);
+                }
+            });
+            
+            console.log('🗺️ Conversation map:', conversationsByUserId);
+            
             this.mergedFriendsList = this.friends.map(friend => {
-                const conversation = this.conversations.find(conv => {
-                    const convOtherId = conv.other_user_id;
-                    const convOtherUsername = conv.other_username;
-
-                    const matchById =
-                        convOtherId !== null &&
-                        convOtherId !== undefined &&
-                        Number(convOtherId) === Number(friend.id);
-
-                    const matchByUsername =
-                        !!convOtherUsername && convOtherUsername === friend.username;
-
-                    return matchById || matchByUsername;
+                const friendId = Number(friend.id);
+                const conversation = conversationsByUserId.get(friendId);
+                
+                console.log(`👤 Friend ${friend.username} (ID: ${friendId}):`, {
+                    hasConversation: !!conversation,
+                    conversationSid: conversation?.sid,
+                    lastMessage: conversation?.last_message_body
                 });
-
+                
                 return {
                     ...friend,
                     conversation_sid: conversation ? conversation.sid : null,
@@ -244,15 +251,91 @@ class ChatWidgetManager {
                 };
             });
 
-            // sort by most recent message
             this.sortMergedFriendsList();
+            
+            console.log('✅ Merged friends list:', this.mergedFriendsList);
 
             this.renderFriendsList();
+            
         } catch (error) {
             console.error('Error loading friends and conversations:', error);
             if (this.friendsList) {
                 this.friendsList.innerHTML = '<div class="chat-empty-state"><i class="fas fa-user-friends"></i><p>No friends to message yet</p></div>';
             }
+        }
+    }
+
+    async loadUnreadCounts() {
+        if (!this.twilioClient) {
+            console.log('❌ Twilio client not ready, skipping unread count load');
+            return;
+        }
+
+        try {
+            let attempts = 0;
+            while (this.twilioClient.connectionState !== 'connected' && attempts < 50) {
+                console.log(`⏳ Waiting for Twilio connection... (attempt ${attempts + 1})`);
+                await new Promise(resolve => setTimeout(resolve, 200));
+                attempts++;
+            }
+
+            if (this.twilioClient.connectionState !== 'connected') {
+                console.error('❌ Twilio client failed to connect after 50 attempts');
+                return;
+            }
+
+            console.log('✅ Twilio connected, fetching conversations...');
+            
+            const conversations = await this.twilioClient.getSubscribedConversations();
+            
+            console.log(`📬 Loading unread counts for ${conversations.items.length} conversations`);
+            
+            for (const conversation of conversations.items) {
+                try {
+                    // Get Twilio's unread count
+                    const twilioUnreadCount = await conversation.getUnreadMessagesCount();
+                    console.log(`📊 Twilio reports ${twilioUnreadCount} unread for ${conversation.sid}`);
+                    
+                    if (twilioUnreadCount > 0) {
+                        // Get recent messages to count only messages NOT from current user
+                        const messages = await conversation.getMessages(twilioUnreadCount);
+                        const myIdentity = 'user_' + this.currentUserId;
+                        
+                        // Count only unread messages from OTHER users
+                        let actualUnreadCount = 0;
+                        for (const message of messages.items) {
+                            if (message.author !== myIdentity) {
+                                actualUnreadCount++;
+                                console.log(`📩 Unread message from ${message.author}: "${message.body}"`);
+                            } else {
+                                console.log(`⏭️ Skipping message from self: "${message.body}"`);
+                            }
+                        }
+                        
+                        console.log(`📊 Actual unread from others: ${actualUnreadCount}`);
+                        
+                        if (actualUnreadCount > 0) {
+                            this.unreadCounts.set(conversation.sid, actualUnreadCount);
+                            console.log(`📩 Set unread count for ${conversation.sid}: ${actualUnreadCount}`);
+                        }
+                    }
+                    
+                    // NOW set up listeners after we've captured the unread count
+                    await this.setupConversationListeners(conversation);
+                    
+                } catch (error) {
+                    console.error(`❌ Error getting unread count for ${conversation.sid}:`, error);
+                }
+            }
+            
+            console.log('📊 Final unread counts Map:', this.unreadCounts);
+            console.log('📊 Unread counts as array:', Array.from(this.unreadCounts.entries()));
+            
+            this.renderFriendsList();
+            this.updateNotificationBadge();
+            
+        } catch (error) {
+            console.error('❌ Error loading unread counts:', error);
         }
     }
 
@@ -269,7 +352,6 @@ class ChatWidgetManager {
             const avatarUrl = friend.avatar_url || this.defaultAvatar;
             const username = friend.username;
 
-            // Treat hasConversation as "we know a conversation SID OR we explicitly marked it"
             const hasConversation =
                 (friend.conversation_sid && friend.conversation_sid !== '') ||
                 !!friend.has_conversation;
@@ -278,23 +360,22 @@ class ChatWidgetManager {
                 ? (this.unreadCounts.get(friend.conversation_sid) || 0)
                 : 0;
 
+            const hasUnreadClass = unreadCount > 0 ? ' has-unread' : '';
+            
             const unreadBadge = unreadCount > 0
                 ? '<span class="chat-friend-unread">' + unreadCount + '</span>'
                 : '';
 
-            // ----- Last message preview logic -----
             const rawLastBody = friend.last_message_body || '';
             let lastMessageText = '';
 
             if (rawLastBody) {
-                // We have a real last message – show it
                 if (friend.last_message_author === 'user_' + this.currentUserId) {
                     lastMessageText = 'You: ' + rawLastBody;
                 } else {
                     lastMessageText = rawLastBody;
                 }
             } else {
-                // No messages yet (whether or not a Twilio conversation SID exists)
                 lastMessageText = 'Start a conversation';
             }
 
@@ -304,11 +385,13 @@ class ChatWidgetManager {
             }
 
             return ''
-                + '<div class="chat-friend-item"'
+                + '<div class="chat-friend-item' + hasUnreadClass + '"'
                 + ' data-user-id="' + friend.id + '"'
                 + ' data-conversation-sid="' + (friend.conversation_sid || '') + '"'
                 + ' data-has-conversation="' + hasConversation + '">'
-                    + '<img src="' + avatarUrl + '" alt="' + username + '" class="chat-friend-avatar">'
+                    + '<div class="chat-friend-avatar-wrapper">'
+                        + '<img src="' + avatarUrl + '" alt="' + username + '" class="chat-friend-avatar">'
+                    + '</div>'
                     + '<div class="chat-friend-info">'
                         + '<p class="chat-friend-name">' + username + '</p>'
                         + '<p class="chat-friend-last-message">' + this.escapeHtml(lastMessageText) + '</p>'
@@ -317,7 +400,6 @@ class ChatWidgetManager {
                 + '</div>';
         }).join('');
 
-        // Click handlers
         this.friendsList.querySelectorAll('.chat-friend-item').forEach(item => {
             item.addEventListener('click', async () => {
                 const userId = parseInt(item.dataset.userId);
@@ -334,7 +416,7 @@ class ChatWidgetManager {
     }
 
     filterFriends(searchTerm) {
-        if (!this.friendsList) return; // ADDED: Check if element exists
+        if (!this.friendsList) return;
         
         const items = this.friendsList.querySelectorAll('.chat-friend-item');
         const term = searchTerm.toLowerCase();
@@ -347,14 +429,12 @@ class ChatWidgetManager {
 
     async createAndOpenConversation(userId) {
         try {
-            // Show loading state
             const friendItem = this.friendsList.querySelector(`[data-user-id="${userId}"]`);
             if (friendItem) {
                 friendItem.style.opacity = '0.5';
                 friendItem.style.pointerEvents = 'none';
             }
 
-            // Use existing start_conversation endpoint
             const url = `/communication/messaging/start/${userId}/`;
             console.log('Creating conversation with URL:', url);
             const response = await fetch(url);
@@ -369,20 +449,16 @@ class ChatWidgetManager {
                 throw new Error(data.error);
             }
 
-            // The response has "conversation_sid" field
             const conversationSid = data.conversation_sid || data.sid;
             
-            // Update the friend's conversation data
             const friendIndex = this.mergedFriendsList.findIndex(f => f.id === userId);
             if (friendIndex !== -1) {
                 this.mergedFriendsList[friendIndex].conversation_sid = conversationSid;
                 this.mergedFriendsList[friendIndex].has_conversation = true;
             }
 
-            // Re-render list to update UI
             this.renderFriendsList();
 
-            // Get the conversation from Twilio and set up listeners
             if (this.twilioClient) {
                 try {
                     const conversation = await this.twilioClient.getConversationBySid(conversationSid);
@@ -392,14 +468,12 @@ class ChatWidgetManager {
                 }
             }
 
-            // Open the new conversation
             await this.openChatWindow(conversationSid, userId);
 
         } catch (error) {
             console.error('Error creating conversation:', error);
             alert('Failed to start conversation. Please try again.');
             
-            // Reset loading state
             const friendItem = this.friendsList.querySelector(`[data-user-id="${userId}"]`);
             if (friendItem) {
                 friendItem.style.opacity = '1';
@@ -409,33 +483,56 @@ class ChatWidgetManager {
     }
 
     async openChatWindow(conversationSid, userId) {
-        // Check if chat is already open
+        // Guard against duplicate windows
         if (this.openChats.has(conversationSid)) {
             const existingWindow = this.openChats.get(conversationSid);
             existingWindow.classList.remove('minimized');
+            
+            // Still mark as read even if already open
+            await this.markConversationAsRead(conversationSid);
+            this.unreadCounts.delete(conversationSid);
+            this.updateNotificationBadge();
+            this.renderFriendsList();
             return;
         }
 
-        // Limit to 3 open chats
+        // Add this check to prevent multiple simultaneous opens
+        if (this.openingChats && this.openingChats.has(conversationSid)) {
+            console.log('Chat window already opening for:', conversationSid);
+            return;
+        }
+
         if (this.openChats.size >= 3) {
             alert('Maximum 3 chat windows allowed. Please close one first.');
             return;
         }
 
+        // Initialize the Set if it doesn't exist
+        if (!this.openingChats) {
+            this.openingChats = new Set();
+        }
+
+        // Mark this conversation as currently opening
+        this.openingChats.add(conversationSid);
+
         try {
-            // Get conversation details
             const url = this.urls.getOtherUser.replace('CONVERSATION_SID', conversationSid);
             const response = await fetch(url);
             const userData = await response.json();
 
-            // Create chat window
             const chatWindow = this.createChatWindow(conversationSid, userData);
             this.widgetContainer.appendChild(chatWindow);
             
             this.openChats.set(conversationSid, chatWindow);
             
-            // ⭐ Load messages and also update last-message preview for this friend
             await this.loadMessages(conversationSid, userId);
+            
+            // Give Twilio a moment to process the messages being loaded
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            // Mark conversation as read
+            console.log(`📖 Opening chat window for ${conversationSid}, marking as read...`);
+            await this.markConversationAsRead(conversationSid);
             
             // Clear unread count
             this.unreadCounts.delete(conversationSid);
@@ -444,6 +541,40 @@ class ChatWidgetManager {
         } catch (error) {
             console.error('Error opening chat window:', error);
             alert('Failed to open chat. Please try again.');
+        } finally {
+            // Always remove from opening set when done
+            this.openingChats.delete(conversationSid);
+        }
+    }
+
+    async markConversationAsRead(conversationSid) {
+        try {
+            if (!this.twilioClient) {
+                console.log('⚠️ Cannot mark as read - Twilio client not ready');
+                return;
+            }
+            
+            console.log(`📖 Attempting to mark conversation ${conversationSid} as read...`);
+            const conversation = await this.twilioClient.getConversationBySid(conversationSid);
+            
+            // Get current unread count before marking as read
+            const unreadBefore = await conversation.getUnreadMessagesCount();
+            console.log(`📖 Unread count before marking: ${unreadBefore}`);
+            
+            // Mark all messages as read
+            await conversation.setAllMessagesRead();
+            
+            // Verify it worked
+            const unreadAfter = await conversation.getUnreadMessagesCount();
+            console.log(`📖 Unread count after marking: ${unreadAfter}`);
+            
+            if (unreadAfter === 0) {
+                console.log(`✅ Successfully marked conversation ${conversationSid} as read`);
+            } else {
+                console.warn(`⚠️ Still have ${unreadAfter} unread messages after marking as read`);
+            }
+        } catch (error) {
+            console.error('❌ Error marking conversation as read:', error);
         }
     }
 
@@ -481,7 +612,6 @@ class ChatWidgetManager {
             '</button>' +
         '</div>';
 
-        // Attach event handlers
         const header = div.querySelector('.chat-window-header');
         const minimizeBtn = div.querySelector('.minimize-btn');
         const closeBtn = div.querySelector('.close-btn');
@@ -534,7 +664,6 @@ class ChatWidgetManager {
             const messages = data.messages || [];
 
             if (messages.length > 0) {
-                // Render messages in the order they come from backend
                 messagesContainer.innerHTML = messages.map(msg =>
                     this.createMessageHTML({
                         author: msg.author,
@@ -543,7 +672,6 @@ class ChatWidgetManager {
                     })
                 ).join('');
 
-                // Scroll to bottom so the latest one (in that order) is visible
                 messagesContainer.scrollTop = messagesContainer.scrollHeight;
             } else {
                 messagesContainer.innerHTML =
@@ -557,10 +685,8 @@ class ChatWidgetManager {
     }
 
     createMessageHTML(message) {
-        // A message is "sent" if its author is this user's Twilio identity
         const isSent = message.author === 'user_' + this.currentUserId;
 
-        // Support both dateCreated (Twilio events) and date_created (Django API)
         const rawDate = message.dateCreated || message.date_created || message.date;
         let time = '';
 
@@ -587,7 +713,7 @@ class ChatWidgetManager {
         const input = document.querySelector('.chat-input[data-conversation-sid="' + conversationSid + '"]');
         const sendBtn = document.querySelector('.chat-send-btn[data-conversation-sid="' + conversationSid + '"]');
         
-        if (!input || !sendBtn) return; // ADDED: Safety check
+        if (!input || !sendBtn) return;
         
         input.disabled = true;
         sendBtn.disabled = true;
@@ -616,7 +742,6 @@ class ChatWidgetManager {
         const messagesContainer = document.getElementById('messages-' + conversationSid);
         
         if (messagesContainer) {
-            // Remove empty state if exists
             const emptyState = messagesContainer.querySelector('.chat-empty-state');
             if (emptyState) {
                 emptyState.remove();
@@ -631,15 +756,14 @@ class ChatWidgetManager {
             messagesContainer.insertAdjacentHTML('beforeend', messageHTML);
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
         } else {
-            // Chat window not open - increment unread count
             if (message.author !== 'user_' + this.currentUserId) {
                 const currentCount = this.unreadCounts.get(conversationSid) || 0;
                 this.unreadCounts.set(conversationSid, currentCount + 1);
+                console.log(`📬 New unread message in ${conversationSid}, count: ${currentCount + 1}`);
                 this.updateNotificationBadge();
             }
         }
 
-        // ALWAYS update friend preview + ordering for this conversation
         this.updateFriendLastMessage(conversationSid, message);
         this.sortMergedFriendsList();
         this.renderFriendsList();
@@ -688,15 +812,26 @@ class ChatWidgetManager {
     }
 
     updateNotificationBadge() {
-        if (!this.notificationBadge) return; // ADDED: Safety check
+        console.log('🔔 Updating notification badge');
+        console.log('🔔 Current unread counts:', this.unreadCounts);
+        console.log('🔔 Badge element:', this.notificationBadge);
+        
+        if (!this.notificationBadge) {
+            console.error('❌ Notification badge element not found!');
+            return;
+        }
         
         const totalUnread = Array.from(this.unreadCounts.values()).reduce((sum, count) => sum + count, 0);
+        
+        console.log('📊 Total unread messages:', totalUnread);
         
         if (totalUnread > 0) {
             this.notificationBadge.textContent = totalUnread > 99 ? '99+' : totalUnread;
             this.notificationBadge.style.display = 'flex';
+            console.log('✅ Badge shown with count:', this.notificationBadge.textContent);
         } else {
             this.notificationBadge.style.display = 'none';
+            console.log('✅ Badge hidden (no unread)');
         }
     }
 
@@ -727,11 +862,11 @@ class ChatWidgetManager {
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', function() {
         if (document.getElementById('chatWidgetConfig')) {
-            new ChatWidgetManager();
+            window.chatManager = new ChatWidgetManager();
         }
     });
 } else {
     if (document.getElementById('chatWidgetConfig')) {
-        new ChatWidgetManager();
+        window.chatManager = new ChatWidgetManager();
     }
 }

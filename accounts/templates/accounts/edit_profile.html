@@ -63,7 +63,7 @@
         {% endif %}
       {% endfor %}
 
-      <!-- ✅ Classes Selector (For Both Students and Tutors) -->
+      <!-- ✅ Classes Selector with Skill Level (For Students) or Without (For Tutors) -->
       {% if profile_type == "Student" or profile_type == "Tutor" %}
         <div class="form-group mb-3">
           <label for="classSearch" class="form-label">
@@ -113,10 +113,24 @@
   <!-- ✅ Safe JSON Embeds -->
   {{ classes|json_script:"available-classes" }}
   {{ current_classes|json_script:"current-classes" }}
+  {% if profile_type == "Student" %}
+    {{ skill_levels|json_script:"skill-levels" }}
+  {% endif %}
 
   <script>
   const availableClasses = JSON.parse(document.getElementById('available-classes').textContent);
   const currentClassesData = JSON.parse(document.getElementById('current-classes').textContent);
+  const isStudent = "{{ profile_type }}" === "Student";
+  const skillLevels = isStudent ? JSON.parse(document.getElementById('skill-levels').textContent) : null;
+
+  // Skill level colors (for students only)
+  const skillColors = {
+    1: '#ef4444', // red
+    2: '#f97316', // orange
+    3: '#eab308', // yellow
+    4: '#84cc16', // lime
+    5: '#22c55e'  // green
+  };
 
   const search = document.getElementById('classSearch');
   const dropdown = document.getElementById('classDropdown');
@@ -124,11 +138,17 @@
   const input = document.getElementById('id_classes');
   const addBtn = document.getElementById('addClassBtn');
 
-  // ✅ Initialize with current classes
+  // ✅ Initialize with current classes (with skill_level for students)
   let selected = currentClassesData;
 
   function updateInput() {
-      input.value = selected.map(c => c.id).join(',');
+      if (isStudent) {
+          // ✅ Store as JSON with skill levels for students
+          input.value = JSON.stringify(selected.map(c => ({id: c.id, skill_level: c.skill_level || 3})));
+      } else {
+          // Store as comma-separated IDs for tutors
+          input.value = selected.map(c => c.id).join(',');
+      }
   }
 
   function render() {
@@ -137,13 +157,29 @@
           input.value = '';
           return;
       }
-      selectedDiv.innerHTML = selected.map(c =>
-          `<span class="skill-tag" style="display:inline-flex;align-items:center;gap:0.5rem;background:#e0f2fe;color:#0369a1;padding:0.5rem 0.75rem;border-radius:6px;font-size:0.875rem;">
-              ${c.name}
-              <button type="button" onclick="removeClass(${c.id})"
-                      style="background:none;border:none;color:#0369a1;font-weight:bold;cursor:pointer;font-size:1.25rem;line-height:1;">×</button>
-          </span>`
-      ).join('');
+      
+      if (isStudent) {
+          // Render with skill level colors for students
+          selectedDiv.innerHTML = selected.map(c => {
+              const color = skillColors[c.skill_level || 3] || '#eab308';
+              return `<span class="skill-tag" style="display:inline-flex;align-items:center;gap:0.5rem;background:${color};color:white;padding:0.5rem 0.75rem;border-radius:6px;font-size:0.875rem;">
+                  ${c.name}
+                  <button type="button" onclick="editSkillLevel(${c.id})"
+                          style="background:rgba(255,255,255,0.2);border:none;color:white;padding:0.25rem 0.5rem;border-radius:4px;cursor:pointer;font-size:0.75rem;margin-left:0.25rem;">Edit</button>
+                  <button type="button" onclick="removeClass(${c.id})"
+                          style="background:none;border:none;color:white;font-weight:bold;cursor:pointer;font-size:1.25rem;line-height:1;">×</button>
+              </span>`;
+          }).join('');
+      } else {
+          // Render without skill levels for tutors
+          selectedDiv.innerHTML = selected.map(c =>
+              `<span class="skill-tag" style="display:inline-flex;align-items:center;gap:0.5rem;background:#e0f2fe;color:#0369a1;padding:0.5rem 0.75rem;border-radius:6px;font-size:0.875rem;">
+                  ${c.name}
+                  <button type="button" onclick="removeClass(${c.id})"
+                          style="background:none;border:none;color:#0369a1;font-weight:bold;cursor:pointer;font-size:1.25rem;line-height:1;">×</button>
+              </span>`
+          ).join('');
+      }
       updateInput();
   }
 
@@ -152,8 +188,75 @@
       render();
   };
 
+  window.editSkillLevel = id => {
+      const classItem = selected.find(c => c.id === id);
+      if (classItem) {
+          showSkillLevelModal(classItem.id, classItem.name, classItem.skill_level || 3, true);
+      }
+  };
+
+  function showSkillLevelModal(classId, className, currentLevel = 3, isEdit = false) {
+      const modal = document.createElement('div');
+      modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:9999;';
+      
+      const content = document.createElement('div');
+      content.style.cssText = 'background:white;padding:2rem;border-radius:12px;max-width:400px;width:90%;';
+      
+      content.innerHTML = `
+          <h3 style="margin:0 0 1rem 0;font-size:1.25rem;">${isEdit ? 'Edit' : 'Select'} Skill Level for ${className}</h3>
+          <select id="skillLevelSelect" style="width:100%;padding:0.75rem;border:2px solid #e2e8f0;border-radius:8px;font-size:1rem;margin-bottom:1rem;">
+              ${skillLevels.map(([value, label]) => 
+                  `<option value="${value}" ${value === currentLevel ? 'selected' : ''}>${label}</option>`
+              ).join('')}
+          </select>
+          <div style="display:flex;gap:0.5rem;">
+              <button id="confirmSkill" style="flex:1;padding:0.75rem;background:#3b82f6;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:600;">
+                  ${isEdit ? 'Update' : 'Add Class'}
+              </button>
+              <button id="cancelSkill" style="flex:1;padding:0.75rem;background:#6b7280;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:600;">
+                  Cancel
+              </button>
+          </div>
+      `;
+      
+      modal.appendChild(content);
+      document.body.appendChild(modal);
+      
+      document.getElementById('confirmSkill').onclick = () => {
+          const skillLevel = parseInt(document.getElementById('skillLevelSelect').value);
+          if (isEdit) {
+              // Update existing class
+              const classItem = selected.find(c => c.id === classId);
+              if (classItem) {
+                  classItem.skill_level = skillLevel;
+              }
+          } else {
+              // Add new class
+              if (!selected.find(c => c.id === classId)) {
+                  selected.push({ id: classId, name: className, skill_level: skillLevel });
+              }
+          }
+          render();
+          document.body.removeChild(modal);
+      };
+      
+      document.getElementById('cancelSkill').onclick = () => {
+          document.body.removeChild(modal);
+      };
+      
+      modal.onclick = (e) => {
+          if (e.target === modal) document.body.removeChild(modal);
+      };
+  }
+
   function addClass(id, name) {
-      if (!selected.find(c => c.id === id)) {
+      if (selected.find(c => c.id === id)) return;
+      
+      if (isStudent) {
+          // Show skill level modal for students
+          showSkillLevelModal(id, name);
+      } else {
+          // Direct add for tutors
           selected.push({ id, name });
           render();
       }
@@ -186,7 +289,10 @@
       if (!className) return alert('Enter a class name first');
 
       const existing = availableClasses.find(c => c.name.toLowerCase() === className.toLowerCase());
-      if (existing) return addClass(existing.id, existing.name);
+      if (existing) {
+          addClass(existing.id, existing.name);
+          return;
+      }
 
       const csrf = document.querySelector('[name=csrfmiddlewaretoken]').value;
       try {
@@ -214,7 +320,6 @@
       }
   });
 
-  // ✅ Initialize with current classes
   render();
   updateInput();
   </script>

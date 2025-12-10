@@ -6,7 +6,7 @@ class ClassAdmin(admin.ModelAdmin):
     list_display = ['name', 'created_at', 'student_count', 'tutor_count']
     search_fields = ['name']
     list_filter = ['created_at']
-    ordering = ['-created_at']
+    name = ['-created_at']
     readonly_fields = ['created_at']
     
     # Add custom columns to show usage
